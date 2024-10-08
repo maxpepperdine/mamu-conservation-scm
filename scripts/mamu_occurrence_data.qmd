@@ -1,0 +1,63 @@
+---
+title: "MAMU Occurrence Data"
+format: html
+editor: visual
+---
+
+## Load packages
+
+```{r}
+library(here) 
+library(tidyverse)
+library(janitor)
+library(wallace)
+```
+
+## Load & clean GBIF observation data
+
+```{r}
+# downlownd marbled murrelet occurrence data acquired from GBIF
+# this csv was filtered in ArcGIS to include only terrestrial observations
+sp_occur_terrestrial <- read_csv(here("data/temp/occurrence_data/land_occurrence.csv"))
+
+
+# clean names and select some variables 
+# convert variable names into suitable format for Wallace
+# need to have the genus & species separated by a space, with genus capitalized
+# need to have 'longitude' & 'latitude' as the next two variables
+sp_occur_wallace <- sp_occur_terrestrial %>% 
+  clean_names() %>% 
+  select(gbif_id, species, locality, occurrence_status, individual_count, 
+         latitude = decimal_latitude, longitude = decimal_longitude, 
+         year, basis_of_record, institution_code, 
+         scientific_name = species) %>% 
+  relocate(scientific_name, .before = gbif_id) %>% 
+  relocate(longitude, .after = scientific_name) %>%
+  relocate(latitude, .after = longitude)
+
+
+# export clean data as csv
+# this is the occurrence data to use in Wallace!
+write_csv(sp_occur_wallace, 
+          here("data/temp/occurrence_data/sp_occur_wallace.csv"))
+```
+
+
+
+
+
+**GBIF Data Citation:**
+
+GBIF.org (19 September 2024) GBIF Occurrence Download <https://doi.org/10.15468/dl.hyyc6r>
+
+
+
+
+
+
+
+
+
+
+
+
