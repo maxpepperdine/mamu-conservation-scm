@@ -2,6 +2,8 @@
 title: "Pacific Veg Map data processing"
 format: html
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
 
 ## Overview
@@ -25,10 +27,162 @@ library(terra)
 library(sf)
 library(here)
 library(tidyverse)
+library(tmap)
 ```
 
 ## Load data
 
+#### Forest structure
+
+```{r}
+#---------------- fine-scale vegetation ----------------#
+cruz_clara_finescale_veg <- read_sf("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/pacific_veg_map/cruz_clara/cruz_clara_finescale_veg/cruz_clara_finescale_veg.gdb")
+crs(cruz_clara_finescale_veg)
+
+
+#--------------- canopy height models ---------------#
+
+# santa cruz (4.6 GB)
+santa_cruz_chm_3ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/pacific_veg_map/santa_cruz/santa_cruz_CHM_res3ft_ft/SANTA_CRUZ_CHM_2020_3FT_COMBINED.tif")
+crs(santa_cruz_chm_3ft)
+
+# santa clara (11.9 GB)
+santa_clara_chm_3ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/pacific_veg_map/santa_clara/santa_clara_CHM_res3ft_ft/SANTA_CLARA_2020_CHM_3FT.tif")
+crs(santa_clara_chm_3ft)
+
+# san mateo (2.6 GB)
+san_mateo_chm_3ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/pacific_veg_map/san_mateo/san_mateo_CHM_res3ft_ft/SAN_MATEO_2017_CHM_3FT.tif")
+crs(san_mateo_chm_3ft)
+
+
+#--------------- canopy cover ---------------#
+
+# santa cruz 
+
+
+# santa clara
+
+
+# san mateo
+
+
+
+
+
+
+
+```
+
+#### Topographic 
+
 ```{r}
 
 ```
+
+## Change the resolution of vegetation data with `terra::aggregate()`
+
+#### Check to make sure all rasters are in the same CRS
+
+###### Canopy height model (CHM)
+
+```{r}
+# santa cruz & clara
+if (crs(santa_cruz_chm_3ft) == crs(santa_clara_chm_3ft)){
+  print("Cruz & Clara CHM rasters are in the same CRS")
+} else {
+  warning("Cruz & Clara CHM rasters are NOT in the same CRS")
+}
+
+# santa cruz & san mateo
+if (crs(santa_cruz_chm_3ft) == crs(san_mateo_chm_3ft)){
+  print("Cruz & Mateo CHM rasters are in the same CRS")
+} else {
+  warning("Cruz & Mateo CHM rasters are NOT in the same CRS")
+}
+
+# project the San Mateo CHM to the same CRS as the Santa Cruz & Clara CHM
+san_mateo_chm_3ft <- project(san_mateo_chm_3ft, 
+                             crs(santa_cruz_chm_3ft))
+
+# confirm they're in the same crs
+if (crs(santa_cruz_chm_3ft) == crs(san_mateo_chm_3ft)){
+  print("Cruz & Mateo CHM rasters are in the same CRS")
+} else {
+  warning("Cruz & Mateo CHM rasters are NOT in the same CRS")
+}
+
+# # save the projected San Mateo CHM
+# san_mateo_chm_3ft_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/san_mateo/san_mateo_CHM_res3ft_ft_nad83_2011/san_mateo_CHM_res3ft_ft_nad83_2011.tif"
+# writeRaster(san_mateo_chm_3ft, san_mateo_chm_3ft_file_path, 
+#             overwrite = TRUE)
+```
+
+#### Change the resolution of the rasters from 3 ft to 45 ft
+
+###### Canopy height model (CHM)
+
+```{r}
+#---------- change resolution of rasters ----------#
+
+# santa cruz
+santa_cruz_chm_45ft <- aggregate(santa_cruz_chm_3ft, 
+                                 fact = 15, 
+                                 fun = max) # CHM should be max height
+#res(santa_cruz_chm_45ft) # QC
+
+# santa clara
+santa_clara_chm_45ft <- aggregate(santa_clara_chm_3ft, 
+                                  fact = 15, 
+                                  fun = max)
+#res(santa_clara_chm_45ft) # QC
+
+# san mateo
+san_mateo_chm_45ft <- aggregate(san_mateo_chm_3ft, 
+                                fact = 15, 
+                                fun = max)
+#res(san_mateo_chm_45ft) # QC
+
+
+#---------- save the aggregated rasters ----------#
+
+# santa cruz
+cruz_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/santa_cruz/santa_cruz_CHM_res45ft_ft/santa_cruz_chm_45ft.tif"
+
+writeRaster(santa_cruz_chm_45ft, cruz_file_path, 
+            overwrite = TRUE)
+
+# santa clara
+clara_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/santa_clara/santa_clara_CHM_res45ft_ft/santa_clara_chm_45ft.tif"
+
+writeRaster(santa_clara_chm_45ft, clara_file_path, 
+            overwrite = TRUE)
+
+# san mateo
+mateo_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/san_mateo/san_mateo_CHM_res45ft_ft/san_mateo_chm_45ft.tif"
+
+writeRaster(san_mateo_chm_45ft, mateo_file_path, 
+            overwrite = TRUE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
