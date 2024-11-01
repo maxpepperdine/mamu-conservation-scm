@@ -1,0 +1,131 @@
+---
+title: "Distance to Rivers"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Overview
+
+-   This quarto doc serves to calculate the distance to rivers for the entire extent of the Santa Cruz Mountains
+
+- The output will be a raster covering the extent of the SCM at a 45ft resolution with each grid cell representing the distance to the nearest river from its centroid
+
+## Load packages
+
+```{r}
+library(terra)
+library(sf)
+library(here)
+library(tidyverse)
+library(tmap)
+library(raster)
+```
+
+## Load data 
+
+```{r}
+# digital elevation model (45ft)
+scm_dem_45ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/scm_region_combined/scm_dem_45ft/scm_dem_45ft.tif")
+crs(scm_dem_45ft)
+
+# distance to nearest river points 
+dist_rivers_points <- read_sf("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/distance_to_rivers/distance_to_rivers_points.shp")
+crs(dist_rivers_points)
+```
+
+## Turn the river points into a raster
+
+#### Rasterize the distance to river points created in ArcGIS Pro
+
+```{r}
+# reproject dist_rivers_points to the scm_dem_45ft projection
+dist_rivers_points_proj <- st_transform(dist_rivers_points, 
+                                        crs(scm_dem_45ft))
+
+# make sure both are in same projection 
+crs(scm_dem_45ft) == crs(dist_rivers_points_proj)
+st_crs(dist_rivers_points_proj)$units #check units
+
+
+# Create a new (blank) raster
+new_raster <- raster()
+# match raster extent to that of the hec data
+extent(new_raster) <- extent(dist_rivers_points_proj)
+crs(new_raster) <- crs(dist_rivers_points_proj) # assign new raster same CRS
+res(new_raster) <- 100 # match resolution to pixel size 
+
+# rasterize and preserve the distance to river values
+dist_rivers_raster <- rasterize(dist_rivers_points_proj,
+                                new_raster, 
+                                field = "near_dist")
+
+# plot the raster
+plot(dist_rivers_raster)
+
+# save the raster
+writeRaster(dist_rivers_raster, 
+            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/distance_to_rivers/distance_to_rivers_res100ft.tif",
+            overwrite = TRUE)
+```
+
+#### Resample the river raster to the DEM resolution
+
+```{r}
+# load the distance to rivers raster as a SpatRaster
+# the distance to rivers is in meters
+dist_rivers_raster <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/distance_to_rivers/distance_to_rivers_res100ft.tif")
+
+# digital elevation model (45ft)
+scm_dem_45ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/scm_region_combined/scm_dem_45ft/scm_dem_45ft.tif")
+
+# confirm they're in the same CRS
+crs(scm_dem_45ft) == crs(dist_rivers_raster)
+
+# resample the river raster to the DEM resolution
+dist_rivers_raster_45ft <- resample(dist_rivers_raster, 
+                                    scm_dem_45ft, 
+                                    method = "bilinear")
+
+# check the resolution
+res(dist_rivers_raster_45ft) == res(scm_dem_45ft)
+
+
+# Apply the focal function to calculate the mean of neighboring cells, only for NAs
+dist_rivers_raster_45ft_filled <- ifel(is.na(dist_rivers_raster_45ft), 
+                                       focal(dist_rivers_raster_45ft, 
+                                             w = 3, fun = mean, 
+                                             na.rm = TRUE), 
+                                       dist_rivers_raster_45ft)
+
+
+# plot the resampled river raster
+plot(dist_rivers_raster_45ft_filled)
+
+# apply the focal function again to the filled raster
+dist_rivers_raster_45ft_filled <- ifel(is.na(dist_rivers_raster_45ft_filled), 
+                                       focal(dist_rivers_raster_45ft_filled, 
+                                             w = 3, fun = mean, 
+                                             na.rm = TRUE), 
+                                       dist_rivers_raster_45ft_filled)
+
+# plot the filled river raster
+plot(dist_rivers_raster_45ft_filled)
+
+# mask and crop the rivers raster
+dist_rivers_raster_45ft_filled <- mask(dist_rivers_raster_45ft_filled, 
+                                       scm_region_boundary) %>% 
+  crop(scm_region_boundary)
+
+# save the resampled river raster
+dist_river_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/distance_to_rivers/distance_to_rivers_res45ft.tif"
+
+writeRaster(dist_rivers_raster_45ft_filled, dist_river_path, 
+            overwrite = TRUE)
+```
+
+
+
+
+

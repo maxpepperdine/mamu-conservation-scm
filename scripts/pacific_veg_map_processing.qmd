@@ -8,7 +8,7 @@ editor_options:
 
 ## Overview
 
--   This quarto doc serves to process & resample all rasters downloaded from Pacific Veg Map to the same resolution and position
+-   This quarto doc serves to process all rasters downloaded from Pacific Veg Map to get them ready for Maxent modeling with the `Wallace` package
 
 -   At the end of the processing, there will be a single raster file for the following forest structure & topographic rasters that covers the entire extent of the Santa Cruz Mountains:
 
@@ -17,8 +17,10 @@ editor_options:
   -   Digital Elevation Model (DEM)
   -   Aspect
   -   Slope
+  
+- The single raster files were created by merging the rasters from Santa Cruz, Santa Clara, and San Mateo counties
 
--   All files from Pacific Veg Map, and all rasters for this analysis, will eventually have a resolution of 5 meters
+-   All files from Pacific Veg Map, and all rasters for this analysis, will eventually have a resolution of 45 ft
 
 ## Load packages
 
@@ -28,6 +30,7 @@ library(sf)
 library(here)
 library(tidyverse)
 library(tmap)
+# library(arcpullr)
 ```
 
 ## Load data
@@ -40,7 +43,7 @@ cruz_clara_finescale_veg <- read_sf("C:/Users/maxpe/Documents/Bren Courses/ESM 2
 crs(cruz_clara_finescale_veg)
 
 
-#--------------- canopy height models ---------------#
+#--------------- 3ft resolution canopy height models ---------------#
 
 # santa cruz (4.6 GB)
 santa_cruz_chm_3ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/pacific_veg_map/santa_cruz/santa_cruz_CHM_res3ft_ft/SANTA_CRUZ_CHM_2020_3FT_COMBINED.tif")
@@ -53,30 +56,22 @@ crs(santa_clara_chm_3ft)
 # san mateo (2.6 GB)
 san_mateo_chm_3ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/pacific_veg_map/san_mateo/san_mateo_CHM_res3ft_ft/SAN_MATEO_2017_CHM_3FT.tif")
 crs(san_mateo_chm_3ft)
-
-
-#--------------- canopy cover ---------------#
-
-# santa cruz 
-
-
-# santa clara
-
-
-# san mateo
-
-
-
-
-
-
-
 ```
 
 #### Topographic 
 
 ```{r}
+#---------------- digital elevation model (DEM) ----------------#
 
+# santa cruz & santa clara (5m) 
+santa_cruz_clara_dem_5m <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/pacific_veg_map/cruz_clara/cruz_clara_dem_res5m_ft/ELEVATION_5M_UTM10_VALUES_FEET.tif")
+
+# san mateo (20m)
+san_mateo_dem_20m <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/san_mateo/san_mateo_dem_20m/san_mateo_dem_20m.tif")
+res(san_mateo_dem_20m)
+
+# make sure both have same CRS
+crs(santa_cruz_clara_dem_5m) == crs(san_mateo_dem_20m)
 ```
 
 ## Change the resolution of vegetation data with `terra::aggregate()`
@@ -100,9 +95,9 @@ if (crs(santa_cruz_chm_3ft) == crs(san_mateo_chm_3ft)){
   warning("Cruz & Mateo CHM rasters are NOT in the same CRS")
 }
 
-# project the San Mateo CHM to the same CRS as the Santa Cruz & Clara CHM
-san_mateo_chm_3ft <- project(san_mateo_chm_3ft, 
-                             crs(santa_cruz_chm_3ft))
+# # project the San Mateo CHM to the same CRS as the Santa Cruz & Clara CHM
+# san_mateo_chm_3ft <- project(san_mateo_chm_3ft, 
+#                              crs(santa_cruz_chm_3ft))
 
 # confirm they're in the same crs
 if (crs(santa_cruz_chm_3ft) == crs(san_mateo_chm_3ft)){
@@ -164,7 +159,124 @@ writeRaster(san_mateo_chm_45ft, mateo_file_path,
             overwrite = TRUE)
 ```
 
+## Change the resolution of topographic data with `terra::aggregate()`
 
+#### Change the San Mateo DEM resolution to 5m
+
+```{r}
+# make sure the DEMs are in the same CRS
+if (crs(santa_cruz_clara_dem_5m) == crs(san_mateo_dem_20m)){
+  print("Cruz/Clara & Mateo DEM rasters are in the same CRS!")
+} else {
+  warning("Cruz/Clara & Mateo DEM rasters are NOT in the same CRS")
+}
+
+
+# use the terra::disaggregate() function to make the SM DEM 5m
+san_mateo_dem_5m <- disagg(san_mateo_dem_20m, 
+                           fact = 4, 
+                           method = "bilinear")
+# res(san_mateo_dem_5m) == res(santa_cruz_clara_dem_5m) # QC
+
+# # save the 5m San Mateo raster 
+# sm_5m_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/san_mateo/san_mateo_dem_5m/san_mateo_dem_5m.tif"
+# writeRaster(san_mateo_dem_5m, sm_5m_file_path, 
+#             overwrite = TRUE)
+
+# merge the DEMs to have one DEM for entire SCM region
+# order should be: (1) Santa Cruz; (2) Santa Clara; (3) San Mateo
+# in areas where the rasters overlap, values of the first raster will be used
+scm_dem_5m <- merge(santa_cruz_clara_dem_5m, san_mateo_dem_5m, 
+                    first = TRUE)
+```
+
+#### Project the combined SCM DEM into the SCM CHM CRS
+
+```{r}
+# load the SCM 45 ft CHM 
+scm_chm_45ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/scm_region_combined/scm_CHM_res45ft_ft/scm_chm_45ft.tif")
+
+# load the SCM 5m DEM 
+scm_dem_5m <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/scm_region_combined/scm_dem_5m/scm_dem_5m.tif")
+crs(scm_dem_5m)
+res(scm_dem_5m)
+
+# load the SCM region boundary
+scm_region_boundary <- read_sf("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/scm_region_combined/scm_region_boundary/scm_region_boundary.shp")
+
+# put the SCM region boundary in the same CRS as the DEM
+scm_region_boundary <- st_transform(scm_region_boundary, 
+                                    crs(scm_dem_5m))
+crs(scm_region_boundary)
+
+# clip and mask the DEM to the SCM region boundary
+scm_dem_5m <- mask(scm_dem_5m, scm_region_boundary) %>% 
+  crop(scm_region_boundary)
+plot(scm_dem_5m)
+```
+
+```{r}
+# put the DEM in the same CRS as the CHM
+scm_dem_5m_proj <- project(scm_dem_5m, 
+                           crs(scm_chm_45ft))
+
+# confirm they're in the same CRS
+crs(scm_chm_45ft) == crs(scm_dem_5m_proj)
+```
+
+#### Resample the SCM DEM to the SCM CHM resolution & position 
+
+```{r}
+# resample the DEM to the CHM resolution
+scm_dem_45ft <- resample(scm_dem_5m_proj, 
+                         scm_chm_45ft, 
+                         method = "bilinear")
+res(scm_dem_45ft) == res(scm_chm_45ft) # QC
+
+# save the resampled DEM
+scm_dem_45ft_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/scm_region_combined/scm_dem_45ft/scm_dem_45ft.tif"
+
+writeRaster(scm_dem_45ft, scm_dem_45ft_file_path, 
+            overwrite = TRUE)
+```
+
+## Merge the aggregated rasters
+
+#### Canopy height model (CHM)
+
+```{r}
+# load the aggregated (45 ft resolution) CHM rasters
+cruz_chm_45ft <- rast(cruz_file_path)
+clara_chm_45ft <- rast(clara_file_path)
+mateo_chm_45ft <- rast(mateo_file_path)
+# make sure they're in the same CRS
+crs(cruz_chm_45ft) == crs(clara_chm_45ft)
+crs(clara_chm_45ft) == crs(mateo_chm_45ft)
+
+
+# merge the rasters to have one CHM for entire SCM region
+# order should be: (1) Santa Cruz; (2) Santa Clara; (3) San Mateo
+# in areas where the rasters overlap, values of the first raster will be used
+scm_chm_45ft <- merge(cruz_chm_45ft, clara_chm_45ft, mateo_chm_45ft, 
+                      first = TRUE)
+
+# plot with tmap to QC
+tm_shape(scm_chm_45ft) +
+  tm_raster() + 
+  tm_layout(legend.outside = TRUE)
+
+# save the merged CHM!
+scm_chm_45ft_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/scm_region_combined/scm_CHM_res45ft_ft/scm_chm_45ft.tif"
+
+writeRaster(scm_chm_45ft, scm_chm_45ft_file_path, 
+            overwrite = TRUE)
+```
+
+#### Digital Elevation Models (DEMs)
+
+```{r}
+# did this with the Mosaic to Raster tool in ArcGIS Pro because R kept crashing
+```
 
 
 
