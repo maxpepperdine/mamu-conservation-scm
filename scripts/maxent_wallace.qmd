@@ -1,0 +1,27 @@
+---
+title: "Maxent Modeling with Wallace!"
+format: html
+editor: visual
+---
+
+## Load packages
+
+```{r}
+library(wallace)
+```
+
+## Run Wallace
+
+```{r}
+run_wallace()
+```
+
+
+
+
+
+
+
+
+
+
