@@ -6,20 +6,20 @@ editor_options:
   chunk_output_type: console
 ---
 
-## Clear the environment
-
 ```{r}
+# clear the environment
 rm(list = ls())
 ```
 
-## Load packages
-
 ```{r}
+# load wallace
 library(wallace)
 ```
 
-## Run Wallace
-
 ```{r}
+# run wallace 
 run_wallace()
 ```
+
+
+

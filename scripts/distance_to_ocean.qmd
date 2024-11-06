@@ -1,0 +1,26 @@
+---
+title: "Distance to Ocean"
+format: html
+editor: visual
+---
+
+## Load packages
+
+```{r}
+
+```
+
+## Load data
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+

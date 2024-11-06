@@ -4,6 +4,11 @@ format: html
 editor: visual
 ---
 
+## Overview
+
+- `Wallace` requires that all environmental predictor rasters are in the same projection, extent, and resolution; this document will ensure that.
+- Occurrence data uploaded to `Wallace` will be in WGS 84 by default, so all environmental predictor rasters need to be projected to WGS 84.
+
 ## Load packages
 
 ```{r}
@@ -13,7 +18,7 @@ library(sf)
 library(tidyverse)
 ```
 
-## Make sure all rasters are in the same projection, extent, resolution
+## Make sure all rasters being used in `Wallace` are in the same projection, extent, resolution
 
 #### Load environmental predictor data
 
@@ -38,28 +43,35 @@ scm_aspect_45ft <- rast(aspect_file_path)
 #### Check the projection, resolution, and extent of the rasters
 
 ```{r}
-# projection 
+# make sure the projection, resolution, and extent of all rasters are the same
+
+## projection 
 crs(scm_chm_45ft) == crs(scm_dem_45ft)
 crs(scm_chm_45ft) == crs(scm_aspect_45ft)
 crs(scm_chm_45ft) == crs(dist_to_rivers)
 
-# extent
+## extent
 ext(scm_chm_45ft) == ext(scm_dem_45ft)
 ext(scm_chm_45ft) == ext(scm_aspect_45ft)
 ext(scm_chm_45ft) == ext(dist_to_rivers)
 
-# resolution
+## resolution
 res(scm_chm_45ft) == res(scm_dem_45ft)
 res(scm_chm_45ft) == res(scm_aspect_45ft)
 res(scm_chm_45ft) == res(dist_to_rivers)
+```
 
-# resample the dem & aspect extent to that of the chm
+#### Resample the DEM and Aspect rasters to the extent of the CHM
+
+```{r}
+# the dem and aspect rasters are not the same extent as the chm
+# resample them to the extent of the chm
 scm_dem_45ft_resample <- resample(scm_dem_45ft, 
                                   scm_chm_45ft)
 scm_aspect_45ft_resample <- resample(scm_aspect_45ft, 
                                      scm_chm_45ft)
 
-# check the resampled rasters
+# check the resampled rasters to make sure everything worked
 crs(scm_chm_45ft) == crs(scm_dem_45ft_resample)
 crs(scm_chm_45ft) == crs(scm_aspect_45ft_resample)
 crs(scm_chm_45ft) == crs(dist_to_rivers)
@@ -84,9 +96,10 @@ writeRaster(scm_aspect_45ft_resample,
 #### Put all the rasters in WGS 84
 
 ```{r}
-# load the CHM in WGS 84
-scm_chm_wgs84 <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/scm_chm_45ft_wgs84.tif")
-
+# project the scm_chm_45ft raster to WGS 84
+scm_chm_wgs84 <- project(scm_chm_45ft, 
+                         "EPSG:4326")
+crs(scm_chm_wgs84) # QC
 
 # load all the other rasters
 scm_chm_45ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_chm_45ft.tif")
@@ -106,7 +119,7 @@ dist_to_rivers_wgs84 <- project(dist_to_rivers,
                                crs(scm_chm_wgs84))
 ```
 
-#### Check the projection, resolution, and extent of the rasters
+#### Re-check the projection, resolution, and extent of the rasters
 
 ```{r}
 # projection
@@ -129,16 +142,16 @@ res(scm_chm_45ft_wgs84) == res(dist_to_rivers_wgs84)
 
 ```{r}
 writeRaster(scm_chm_45ft_wgs84, 
-            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/scm_chm_45ft_wgs84.tif", 
+            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/scm_chm_wgs84.tif", 
             overwrite = TRUE)
 writeRaster(scm_dem_45ft_resample_wgs84,
-            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/scm_dem_45ft_resample_wgs84.tif",
+            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/scm_dem_wgs84.tif",
             overwrite = TRUE)
 writeRaster(scm_aspect_45ft_resample_wgs84,
-            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/scm_aspect_45ft_resample_wgs84.tif",
+            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/scm_aspect_wgs84.tif",
             overwrite = TRUE)
 writeRaster(dist_to_rivers_wgs84,
-            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/distance_to_rivers_res45ft_wgs84.tif",
+            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/distance_to_rivers_wgs84.tif",
             overwrite = TRUE)
 ```
 
