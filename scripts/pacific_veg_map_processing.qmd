@@ -215,6 +215,34 @@ scm_dem_5m <- mask(scm_dem_5m, scm_region_boundary) %>%
 plot(scm_dem_5m)
 ```
 
+#### Project the aspect raster to the same CRS as the DEM
+
+```{r}
+# load the aspect raster
+scm_aspect_45ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/scm_region_combined/scm_aspect_45ft/scm_aspect_45ft.tif")
+crs(scm_aspect_45ft)
+
+# load the DEM raster
+scm_dem_45ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/scm_region_combined/scm_dem_45ft/scm_dem_45ft.tif")
+crs(scm_dem_45ft)
+
+crs(scm_aspect_45ft) == crs(scm_dem_45ft)
+
+# project the aspect raster to the same CRS as the DEM
+scm_aspect_45ft_proj <- project(scm_aspect_45ft, 
+                                crs(scm_dem_45ft))
+
+# confirm they're in the same CRS
+crs(scm_aspect_45ft_proj) == crs(scm_dem_45ft)
+
+# save the projected aspect raster
+scm_aspect_45ft_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/scm_region_combined/scm_aspect_45ft/scm_aspect_45ft.tif"
+
+writeRaster(scm_aspect_45ft_proj, scm_aspect_45ft_file_path, 
+            overwrite = TRUE)
+```
+
+
 ```{r}
 # put the DEM in the same CRS as the CHM
 scm_dem_5m_proj <- project(scm_dem_5m, 
@@ -267,6 +295,27 @@ tm_shape(scm_chm_45ft) +
 
 # save the merged CHM!
 scm_chm_45ft_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/pacific_veg_map/scm_region_combined/scm_CHM_res45ft_ft/scm_chm_45ft.tif"
+
+writeRaster(scm_chm_45ft, scm_chm_45ft_file_path, 
+            overwrite = TRUE)
+```
+
+#### Mask the CHM to SCM region
+
+```{r}
+# put the SCM region boundary in the same CRS as the CHM
+scm_region_boundary <- st_transform(scm_region_boundary, 
+                                    crs(scm_chm_45ft))
+crs(scm_region_boundary) == crs(scm_chm_45ft)
+
+# mask/crop the CHM 
+scm_chm_45ft <- mask(scm_chm_45ft, scm_region_boundary) %>% 
+  crop(scm_region_boundary)
+plot(scm_chm_45ft)
+
+
+# save the new CHM
+scm_chm_45ft_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_chm_45ft.tif"
 
 writeRaster(scm_chm_45ft, scm_chm_45ft_file_path, 
             overwrite = TRUE)

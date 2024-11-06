@@ -2,7 +2,15 @@
 title: "Maxent Modeling with Wallace!"
 format: html
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
+
+## Clear the environment
+
+```{r}
+rm(list = ls())
+```
 
 ## Load packages
 
@@ -15,13 +23,3 @@ library(wallace)
 ```{r}
 run_wallace()
 ```
-
-
-
-
-
-
-
-
-
-

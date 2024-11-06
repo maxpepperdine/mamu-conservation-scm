@@ -1,0 +1,148 @@
+---
+title: "Prepping Env Variables for Wallace"
+format: html
+editor: visual
+---
+
+## Load packages
+
+```{r}
+library(wallace)
+library(terra)
+library(sf)
+library(tidyverse)
+```
+
+## Make sure all rasters are in the same projection, extent, resolution
+
+#### Load environmental predictor data
+
+```{r}
+# CHM 
+chm_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_chm_45ft.tif"
+scm_chm_45ft <- rast(chm_file_path)
+
+# Distance to Rivers
+dist_to_rivers_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/distance_to_rivers_res45ft.tif"
+dist_to_rivers <- rast(dist_to_rivers_file_path)
+
+# DEM 
+dem_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_dem_45ft.tif"
+scm_dem_45ft <- rast(dem_file_path)
+
+# Aspect 
+aspect_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_aspect_45ft.tif"
+scm_aspect_45ft <- rast(aspect_file_path)
+```
+
+#### Check the projection, resolution, and extent of the rasters
+
+```{r}
+# projection 
+crs(scm_chm_45ft) == crs(scm_dem_45ft)
+crs(scm_chm_45ft) == crs(scm_aspect_45ft)
+crs(scm_chm_45ft) == crs(dist_to_rivers)
+
+# extent
+ext(scm_chm_45ft) == ext(scm_dem_45ft)
+ext(scm_chm_45ft) == ext(scm_aspect_45ft)
+ext(scm_chm_45ft) == ext(dist_to_rivers)
+
+# resolution
+res(scm_chm_45ft) == res(scm_dem_45ft)
+res(scm_chm_45ft) == res(scm_aspect_45ft)
+res(scm_chm_45ft) == res(dist_to_rivers)
+
+# resample the dem & aspect extent to that of the chm
+scm_dem_45ft_resample <- resample(scm_dem_45ft, 
+                                  scm_chm_45ft)
+scm_aspect_45ft_resample <- resample(scm_aspect_45ft, 
+                                     scm_chm_45ft)
+
+# check the resampled rasters
+crs(scm_chm_45ft) == crs(scm_dem_45ft_resample)
+crs(scm_chm_45ft) == crs(scm_aspect_45ft_resample)
+crs(scm_chm_45ft) == crs(dist_to_rivers)
+
+ext(scm_chm_45ft) == ext(scm_dem_45ft_resample)
+ext(scm_chm_45ft) == ext(scm_aspect_45ft_resample)
+ext(scm_chm_45ft) == ext(dist_to_rivers)
+
+res(scm_chm_45ft) == res(scm_dem_45ft_resample)
+res(scm_chm_45ft) == res(scm_aspect_45ft_resample)
+res(scm_chm_45ft) == res(dist_to_rivers)
+
+# save the resampled rasters
+writeRaster(scm_dem_45ft_resample, 
+            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_dem_45ft_resample.tif", 
+            overwrite = TRUE)
+writeRaster(scm_aspect_45ft_resample,
+            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_aspect_45ft_resample.tif",
+            overwrite = TRUE)
+```
+
+#### Put all the rasters in WGS 84
+
+```{r}
+# load the CHM in WGS 84
+scm_chm_wgs84 <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/scm_chm_45ft_wgs84.tif")
+
+
+# load all the other rasters
+scm_chm_45ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_chm_45ft.tif")
+scm_dem_45ft_resample <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_dem_45ft_resample.tif")
+scm_aspect_45ft_resample <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_aspect_45ft_resample.tif")
+dist_to_rivers <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/distance_to_rivers_res45ft.tif")
+
+
+# change the CRS of all these rasters to WGS 84
+scm_chm_45ft_wgs84 <- project(scm_chm_45ft, 
+                              crs(scm_chm_wgs84))
+scm_dem_45ft_resample_wgs84 <- project(scm_dem_45ft_resample, 
+                                      crs(scm_chm_wgs84))
+scm_aspect_45ft_resample_wgs84 <- project(scm_aspect_45ft_resample, 
+                                         crs(scm_chm_wgs84))
+dist_to_rivers_wgs84 <- project(dist_to_rivers, 
+                               crs(scm_chm_wgs84))
+```
+
+#### Check the projection, resolution, and extent of the rasters
+
+```{r}
+# projection
+crs(scm_chm_45ft_wgs84) == crs(scm_dem_45ft_resample_wgs84)
+crs(scm_chm_45ft_wgs84) == crs(scm_aspect_45ft_resample_wgs84)
+crs(scm_chm_45ft_wgs84) == crs(dist_to_rivers_wgs84)
+
+# extent
+ext(scm_chm_45ft_wgs84) == ext(scm_dem_45ft_resample_wgs84)
+ext(scm_chm_45ft_wgs84) == ext(scm_aspect_45ft_resample_wgs84)
+ext(scm_chm_45ft_wgs84) == ext(dist_to_rivers_wgs84)
+
+# resolution
+res(scm_chm_45ft_wgs84) == res(scm_dem_45ft_resample_wgs84)
+res(scm_chm_45ft_wgs84) == res(scm_aspect_45ft_resample_wgs84)
+res(scm_chm_45ft_wgs84) == res(dist_to_rivers_wgs84)
+```
+
+#### Save the rasters
+
+```{r}
+writeRaster(scm_chm_45ft_wgs84, 
+            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/scm_chm_45ft_wgs84.tif", 
+            overwrite = TRUE)
+writeRaster(scm_dem_45ft_resample_wgs84,
+            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/scm_dem_45ft_resample_wgs84.tif",
+            overwrite = TRUE)
+writeRaster(scm_aspect_45ft_resample_wgs84,
+            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/scm_aspect_45ft_resample_wgs84.tif",
+            overwrite = TRUE)
+writeRaster(dist_to_rivers_wgs84,
+            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/distance_to_rivers_res45ft_wgs84.tif",
+            overwrite = TRUE)
+```
+
+
+
+
+
