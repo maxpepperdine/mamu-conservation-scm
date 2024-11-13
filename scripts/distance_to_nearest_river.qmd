@@ -10,7 +10,17 @@ editor_options:
 
 -   This quarto doc serves to calculate the distance to rivers for the entire extent of the Santa Cruz Mountains
 
-- The output will be a raster covering the extent of the SCM at a 45ft resolution with each grid cell representing the distance to the nearest river from its centroid
+-   The output will be a raster covering the extent of the SCM at a 45ft resolution with each grid cell representing the distance to the nearest river from its centroid
+
+-   In ArcGIS Pro v3.1.1., an 'empty' grid was generated that covers the extent of the SCM region of interest. The grid was created using the `Create Fishnet` tool with the following parameters:
+
+    -   Extent: SCM region boundary
+    -   Cell size width: 100 ft
+    -   Cell size height: 100 ft
+
+-   The Euclidean distance from the centroid of each grid cell to the Pacific Ocean was calculated using the `Near` tool
+
+-   This Quarto doc rasterizes the Euclidean distance grid, preserving the value represeting the distance from each grid cell to the ocean, to a 32-bit floating point raster.
 
 ## Load packages
 
@@ -23,7 +33,7 @@ library(tmap)
 library(raster)
 ```
 
-## Load data 
+## Load data
 
 ```{r}
 # digital elevation model (45ft)
@@ -124,8 +134,3 @@ dist_river_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data
 writeRaster(dist_rivers_raster_45ft_filled, dist_river_path, 
             overwrite = TRUE)
 ```
-
-
-
-
-

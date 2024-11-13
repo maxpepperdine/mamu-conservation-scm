@@ -2,25 +2,136 @@
 title: "Distance to Ocean"
 format: html
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
+
+## Overview
+
+-   In ArcGIS Pro v3.1.1., an 'empty' grid was generated that covers the extent of the SCM region of interest. The grid was created using the `Create Fishnet` tool with the following parameters:
+    -   Extent: SCM region boundary
+    -   Cell size width: 100 ft
+    -   Cell size height: 100 ft
+-   The Euclidean distance from the centroid of each grid cell to the [Pacific Ocean](https://geodata.library.ucsb.edu/catalog/3853-s3_2002_s3_reg_pacific_ocean) was calculated using the `Near` tool
+-   This Quarto doc rasterizes the Euclidean distance grid, preserving the value represeting the distance from each grid cell to the ocean, to a 32-bit floating point raster.
+
+## Clear environment
+
+```{r}
+rm(list = ls())
+```
 
 ## Load packages
 
 ```{r}
-
+library(terra)
+library(tidyverse)
+library(here)
+library(sf)
 ```
 
 ## Load data
 
 ```{r}
+# canopy height model (45ft)
+scm_chm_45ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_chm_45ft.tif")
+crs(scm_chm_45ft)
 
+# distance to nearest river points 
+dist_ocean_points <- read_sf("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/distance_to_oceans/distance_to_oceans_points.shp")
+crs(dist_ocean_points)
+
+# scm region boudary
+scm_region_boundary <- read_sf("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/boundaries/scm_region/scm_region_boundary.shp")
+crs(scm_region_boundary)
 ```
 
+## Turn the ocean points into a raster
+
+#### Rasterize the distance to ocean points created in ArcGIS Pro
+
+```{r}
+# reproject dist_oceans_points to the scm_dem_45ft projection
+dist_oceans_points_proj <- st_transform(dist_ocean_points, 
+                                        crs(scm_chm_45ft))
+
+# make sure both are in same projection 
+crs(scm_chm_45ft) == crs(dist_oceans_points_proj)
+st_crs(dist_oceans_points_proj)$units #check units
 
 
+# Create a new (blank) raster
+new_raster <- raster()
+# match raster extent to that of the hec data
+extent(new_raster) <- extent(dist_oceans_points_proj)
+crs(new_raster) <- crs(dist_oceans_points_proj) # assign new raster same CRS
+res(new_raster) <- 100 # match resolution to pixel size 
+
+# rasterize and preserve the distance to ocean values
+dist_oceans_raster <- rasterize(dist_oceans_points_proj,
+                                new_raster, 
+                                field = "ocean_dist")
+
+# plot the raster
+plot(dist_oceans_raster)
+
+# # save the raster
+# writeRaster(dist_oceans_raster, 
+#             "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/distance_to_oceans/distance_to_oceans_res100ft.tif",
+#             overwrite = TRUE)
+```
+
+#### Resample the ocean raster to the DEM resolution
+
+```{r}
+# load the distance to rivers raster as a SpatRaster
+# the distance to rivers is in meters
+dist_oceans_raster <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/distance_to_oceans/distance_to_oceans_res100ft.tif")
+
+# confirm they're in the same CRS
+crs(scm_chm_45ft) == crs(dist_oceans_raster)
+
+# resample the river raster to the DEM resolution
+dist_oceans_raster_45ft <- resample(dist_oceans_raster, 
+                                    scm_chm_45ft, 
+                                    method = "bilinear")
+
+# check the resolution
+res(dist_oceans_raster_45ft) == res(scm_chm_45ft)
+plot(dist_oceans_raster_45ft)
+
+# Apply focal function to calculate the mean of neighboring cells, only for NAs
+dist_oceans_raster_45ft_filled <- ifel(is.na(dist_oceans_raster_45ft), 
+                                       focal(dist_oceans_raster_45ft, 
+                                             w = 3, fun = mean, 
+                                             na.rm = TRUE), 
+                                       dist_oceans_raster_45ft)
 
 
+# plot the resampled river raster
+plot(dist_oceans_raster_45ft_filled)
 
 
+# apply the focal function again to the filled raster
+# STOP: this may not be necessary; the function is just a little buggy and 
+# didn't fill every cell the first time
+dist_oceans_raster_45ft_filled <- ifel(is.na(dist_oceans_raster_45ft_filled), 
+                                       focal(dist_oceans_raster_45ft_filled, 
+                                             w = 3, fun = mean, 
+                                             na.rm = TRUE), 
+                                       dist_oceans_raster_45ft_filled)
 
+# plot the filled river raster
+plot(dist_oceans_raster_45ft_filled)
 
+# mask and crop the rivers raster
+dist_oceans_raster_45ft_filled <- mask(dist_oceans_raster_45ft_filled, 
+                                       scm_region_boundary) %>% 
+  crop(scm_region_boundary)
+plot(dist_oceans_raster_45ft_filled)
+
+# save the resampled river raster
+dist_ocean_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/distance_to_oceans/distance_to_oceans_res45ft.tif"
+writeRaster(dist_oceans_raster_45ft_filled, dist_ocean_path, 
+            overwrite = TRUE)
+```

@@ -9,6 +9,12 @@ editor: visual
 - `Wallace` requires that all environmental predictor rasters are in the same projection, extent, and resolution; this document will ensure that.
 - Occurrence data uploaded to `Wallace` will be in WGS 84 by default, so all environmental predictor rasters need to be projected to WGS 84.
 
+## Clear history
+
+```{r}
+rm(list = ls())
+```
+
 ## Load packages
 
 ```{r}
@@ -27,9 +33,13 @@ library(tidyverse)
 chm_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_chm_45ft.tif"
 scm_chm_45ft <- rast(chm_file_path)
 
-# Distance to Rivers
+# Distance to rivers
 dist_to_rivers_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/distance_to_rivers_res45ft.tif"
 dist_to_rivers <- rast(dist_to_rivers_file_path)
+
+# Distance to oceans
+dist_ocean_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/distance_to_oceans_res45ft.tif"
+dist_to_oceans <- rast(dist_ocean_path)
 
 # DEM 
 dem_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_dem_45ft.tif"
@@ -49,19 +59,24 @@ scm_aspect_45ft <- rast(aspect_file_path)
 crs(scm_chm_45ft) == crs(scm_dem_45ft)
 crs(scm_chm_45ft) == crs(scm_aspect_45ft)
 crs(scm_chm_45ft) == crs(dist_to_rivers)
+crs(scm_chm_45ft) == crs(dist_to_oceans)
 
 ## extent
 ext(scm_chm_45ft) == ext(scm_dem_45ft)
 ext(scm_chm_45ft) == ext(scm_aspect_45ft)
 ext(scm_chm_45ft) == ext(dist_to_rivers)
+ext(scm_chm_45ft) == ext(dist_to_oceans)
 
 ## resolution
 res(scm_chm_45ft) == res(scm_dem_45ft)
 res(scm_chm_45ft) == res(scm_aspect_45ft)
 res(scm_chm_45ft) == res(dist_to_rivers)
+res(scm_chm_45ft) == res(dist_to_oceans)
 ```
 
 #### Resample the DEM and Aspect rasters to the extent of the CHM
+
+These two rasters didn't have the exact same extent at the CHM. This will cause issues when running Maxent in `Wallace`, so we need to resample them to the same extent. 
 
 ```{r}
 # the dem and aspect rasters are not the same extent as the chm
@@ -106,6 +121,7 @@ scm_chm_45ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_da
 scm_dem_45ft_resample <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_dem_45ft_resample.tif")
 scm_aspect_45ft_resample <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_aspect_45ft_resample.tif")
 dist_to_rivers <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/distance_to_rivers_res45ft.tif")
+dist_to_oceans <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/distance_to_oceans_res45ft.tif")
 
 
 # change the CRS of all these rasters to WGS 84
@@ -117,28 +133,37 @@ scm_aspect_45ft_resample_wgs84 <- project(scm_aspect_45ft_resample,
                                          crs(scm_chm_wgs84))
 dist_to_rivers_wgs84 <- project(dist_to_rivers, 
                                crs(scm_chm_wgs84))
+dist_to_oceans_wgs84 <- project(dist_to_oceans, 
+                               crs(scm_chm_wgs84))
 ```
 
 #### Re-check the projection, resolution, and extent of the rasters
 
 ```{r}
+scm_chm_45ft_wgs84 <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/scm_chm_wgs84.tif")
+
 # projection
 crs(scm_chm_45ft_wgs84) == crs(scm_dem_45ft_resample_wgs84)
 crs(scm_chm_45ft_wgs84) == crs(scm_aspect_45ft_resample_wgs84)
 crs(scm_chm_45ft_wgs84) == crs(dist_to_rivers_wgs84)
+crs(scm_chm_45ft_wgs84) == crs(dist_to_oceans_wgs84)
 
 # extent
 ext(scm_chm_45ft_wgs84) == ext(scm_dem_45ft_resample_wgs84)
 ext(scm_chm_45ft_wgs84) == ext(scm_aspect_45ft_resample_wgs84)
 ext(scm_chm_45ft_wgs84) == ext(dist_to_rivers_wgs84)
+ext(scm_chm_45ft_wgs84) == ext(dist_to_oceans_wgs84)
 
 # resolution
 res(scm_chm_45ft_wgs84) == res(scm_dem_45ft_resample_wgs84)
 res(scm_chm_45ft_wgs84) == res(scm_aspect_45ft_resample_wgs84)
 res(scm_chm_45ft_wgs84) == res(dist_to_rivers_wgs84)
+res(scm_chm_45ft_wgs84) == res(dist_to_oceans_wgs84)
 ```
 
 #### Save the rasters
+
+These are the rasters that will be used for Maxent modeling in `Wallace`!
 
 ```{r}
 writeRaster(scm_chm_45ft_wgs84, 
@@ -152,6 +177,9 @@ writeRaster(scm_aspect_45ft_resample_wgs84,
             overwrite = TRUE)
 writeRaster(dist_to_rivers_wgs84,
             "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/distance_to_rivers_wgs84.tif",
+            overwrite = TRUE)
+writeRaster(dist_to_oceans_wgs84,
+            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/distance_to_oceans_wgs84.tif",
             overwrite = TRUE)
 ```
 
