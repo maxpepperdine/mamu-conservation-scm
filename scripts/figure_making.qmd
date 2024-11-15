@@ -1,0 +1,68 @@
+---
+title: "Figure Making"
+format: html
+editor: visual
+---
+
+## Load packages
+
+```{r}
+library(terra)
+library(tmap)
+library(tmaptools)
+library(here)
+```
+
+## Load data
+
+#### MaxEnt predictor variables
+
+```{r}
+# CHM 
+chm_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_chm_45ft.tif"
+scm_chm_45ft <- rast(chm_file_path)
+
+# Distance to rivers
+dist_to_rivers_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/distance_to_rivers_res45ft.tif"
+dist_to_rivers <- rast(dist_to_rivers_file_path)
+
+# Distance to oceans
+dist_ocean_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/distance_to_oceans_res45ft.tif"
+dist_to_oceans <- rast(dist_ocean_path)
+
+# DEM 
+dem_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_dem_45ft.tif"
+scm_dem_45ft <- rast(dem_file_path)
+
+# Aspect 
+aspect_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_aspect_45ft.tif"
+scm_aspect_45ft <- rast(aspect_file_path)
+
+```
+
+## Map making 
+
+#### Predictor variables 
+
+```{r}
+map1 <- tm_shape(scm_chm_45ft) + 
+  tm_raster() 
+map1
+
+map2 <- tm_shape(dist_to_rivers) +
+  tm_raster()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

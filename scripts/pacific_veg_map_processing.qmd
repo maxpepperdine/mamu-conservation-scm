@@ -12,13 +12,19 @@ editor_options:
 
 -   At the end of the processing, there will be a single raster file for the following forest structure & topographic rasters that covers the entire extent of the Santa Cruz Mountains:
 
-  -   Canopy height
-  -   Canopy cover
-  -   Digital Elevation Model (DEM)
-  -   Aspect
-  -   Slope
-  
-- The single raster files were created by merging the rasters from Santa Cruz, Santa Clara, and San Mateo counties
+-   Canopy height
+
+- Post-fire canopy height 
+
+-   Canopy cover
+
+-   Digital Elevation Model (DEM)
+
+-   Aspect
+
+-   Slope
+
+-   The single raster files were created by merging the rasters from Santa Cruz, Santa Clara, and San Mateo counties
 
 -   All files from Pacific Veg Map, and all rasters for this analysis, will eventually have a resolution of 45 ft
 
@@ -56,9 +62,12 @@ crs(santa_clara_chm_3ft)
 # san mateo (2.6 GB)
 san_mateo_chm_3ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/pacific_veg_map/san_mateo/san_mateo_CHM_res3ft_ft/SAN_MATEO_2017_CHM_3FT.tif")
 crs(san_mateo_chm_3ft)
+
+# CZU post-fire
+santa_cruz_postfire_chm_3ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/pacific_veg_map/cruz_clara/santa_cruz_postfire_CHM_res3ft_ft/CZU_POSTFIRE_CHM_3FEET.tif")
 ```
 
-#### Topographic 
+#### Topographic
 
 ```{r}
 #---------------- digital elevation model (DEM) ----------------#
@@ -242,7 +251,6 @@ writeRaster(scm_aspect_45ft_proj, scm_aspect_45ft_file_path,
             overwrite = TRUE)
 ```
 
-
 ```{r}
 # put the DEM in the same CRS as the CHM
 scm_dem_5m_proj <- project(scm_dem_5m, 
@@ -252,7 +260,7 @@ scm_dem_5m_proj <- project(scm_dem_5m,
 crs(scm_chm_45ft) == crs(scm_dem_5m_proj)
 ```
 
-#### Resample the SCM DEM to the SCM CHM resolution & position 
+#### Resample the SCM DEM to the SCM CHM resolution & position
 
 ```{r}
 # resample the DEM to the CHM resolution
@@ -326,24 +334,3 @@ writeRaster(scm_chm_45ft, scm_chm_45ft_file_path,
 ```{r}
 # did this with the Mosaic to Raster tool in ArcGIS Pro because R kept crashing
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
