@@ -2,7 +2,15 @@
 title: "Figure Making"
 format: html
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
+
+## Clear environment 
+
+```{r}
+rm(list=ls())
+```
 
 ## Load packages
 
@@ -45,12 +53,73 @@ scm_aspect_45ft <- rast(aspect_file_path)
 #### Predictor variables 
 
 ```{r}
+#tmaptools::palette_explorer()
+
 map1 <- tm_shape(scm_chm_45ft) + 
-  tm_raster() 
-map1
+  tm_raster(style = "cont", palette = "viridis", 
+            title = "Canopy height (ft)", 
+            breaks = c(0, 100, 200, 350)) + 
+  tm_layout(legend.position = c("right", "top"), 
+            legend.title.size = 1, 
+            legend.frame = TRUE, 
+            legend.width = 0.3, 
+            legend.bg.color = "grey90", 
+            legend.bg.alpha = 0.5)
+#map1
+
 
 map2 <- tm_shape(dist_to_rivers) +
-  tm_raster()
+  tm_raster(style = "cont", palette = "-Blues", 
+            title = "Distance to rivers (m)", 
+            breaks = c(0, 2000, 4000, 6000)) +
+  tm_layout(legend.position = c("right", "top"), 
+            legend.title.size = 1, 
+            legend.frame = TRUE, 
+            legend.width = 0.3, 
+            legend.bg.color = "grey90", 
+            legend.bg.alpha = 0.5)
+#map2
+
+
+map3 <- tm_shape(dist_to_oceans) +
+  tm_raster(style = "cont", palette = "viridis", 
+            title = "Distance to oceans (m)", 
+            breaks = c(0, 10000, 20000, 30000)) +
+  tm_layout(legend.position = c("right", "top"), 
+            legend.title.size = 1, 
+            legend.frame = TRUE, 
+            legend.width = 0.3, 
+            legend.bg.color = "grey90", 
+            legend.bg.alpha = 0.5)
+#map3
+
+
+map4 <- tm_shape(scm_dem_45ft) +
+  tm_raster(style = "cont", palette = "-Greys", 
+            title = "Digital elevation model (ft)", 
+            breaks = c(0, 2000, 4000)) +
+  tm_layout(legend.position = c("right", "top"), 
+            legend.title.size = 1, 
+            legend.frame = TRUE, 
+            legend.width = 0.3, 
+            legend.bg.color = "grey90", 
+            legend.bg.alpha = 0.5)
+#map4
+
+
+map5 <- tm_shape(scm_aspect_45ft) +
+  tm_raster(title = "Aspect", 
+            palette = "plasma") +
+  tm_layout(legend.position = c("right", "top"), 
+            legend.title.size = 1, 
+            legend.frame = TRUE, 
+            legend.width = 0.3, 
+            legend.bg.color = "grey90", 
+            legend.bg.alpha = 0.5)
+map5
+
+combined_map <- tmap_arrange(map1, map2, map3, map4, map5, ncol = 3)
+combined_map
 ```
 
 

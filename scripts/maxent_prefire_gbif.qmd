@@ -1,0 +1,193 @@
+---
+title: "Maxent Modeling"
+author: "Maxwell Pepperdine"
+format: html
+editor: visual
+---
+
+### Clear environment
+
+```{r}
+rm(list=ls())
+```
+
+### Package installation
+
+Wallace uses the following R packages that must be installed and loaded
+before starting.
+
+```{r}
+library(spocc)
+library(spThin)
+library(dismo)
+library(sf)
+library(ENMeval)
+library(wallace)
+```
+
+------------------------------------------------------------------------
+
+## Analysis for *Brachyramphus marmoratus* (Bm)
+
+```{r}
+# NOTE: provide the folder path of the .csv file
+occs_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/occurrence_data/gbif/"
+occs_path <- file.path(occs_path, "sp_occur_wallace_scm_clip.csv")
+# get a list of species occurrence data
+userOccs_Bm <- occs_userOccs(
+  txtPath = occs_path, 
+  txtName = "sp_occur_wallace_scm_clip.csv", 
+  txtSep = ",", 
+  txtDec = ".")
+occs_Bm <- userOccs_Bm$Brachyramphus_marmoratus$cleaned
+```
+
+### Obtain environmental data
+
+Using user-specified variables.
+
+```{r}
+## Specify the directory with the environmental variables
+dir_envs_Bm <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/"
+envs_path <- file.path(dir_envs_Bm, c('distance_to_oceans_wgs84.tif', 'distance_to_rivers_wgs84.tif', 'scm_aspect_wgs84.tif', 'scm_chm_wgs84.tif', 'scm_dem_wgs84.tif'))
+# Create environmental object 
+envs_Bm <- envs_userEnvs(
+  rasPath = envs_path,
+  rasName = c('distance_to_oceans_wgs84.tif', 'distance_to_rivers_wgs84.tif', 'scm_aspect_wgs84.tif', 'scm_chm_wgs84.tif', 'scm_dem_wgs84.tif'),
+  doBrick = FALSE)
+occs_xy_Bm <- occs_Bm[c('longitude', 'latitude')]
+occs_vals_Bm <- as.data.frame(raster::extract(envs_Bm, occs_xy_Bm, cellnumbers = TRUE))
+# Remove duplicated same cell values
+occs_Bm <- occs_Bm[!duplicated(occs_vals_Bm[, 1]), ]
+occs_vals_Bm <- occs_vals_Bm[!duplicated(occs_vals_Bm[, 1]), -1]
+# remove occurrence records with NA environmental values
+occs_Bm <- occs_Bm[!(rowSums(is.na(occs_vals_Bm)) >= 1), ]
+# also remove variable value rows with NA environmental values
+occs_vals_Bm <- na.omit(occs_vals_Bm)
+# add columns for env variable values for each occurrence record
+occs_Bm <- cbind(occs_Bm, occs_vals_Bm)
+```
+
+### Process environmental data
+
+Sampling of 1000 background points and corresponding environmental data
+using a “bounding box” method with a 0.2 degree buffer.
+
+```{r}
+# Generate background extent 
+bgExt_Bm <- penvs_bgExtent(
+  occs = occs_Bm,
+  bgSel = "bounding box",
+  bgBuf = 0.2)
+# Mask environmental data to provided extent
+bgMask_Bm <- penvs_bgMask(
+  occs = occs_Bm,
+  envs = envs_Bm,
+  bgExt = bgExt_Bm)
+# Sample background points from the provided area
+bgSample_Bm <- penvs_bgSample(
+  occs = occs_Bm,
+  bgMask =  bgMask_Bm,
+  bgPtsNum = 10000)
+# Extract values of environmental layers for each background point
+bgEnvsVals_Bm <- as.data.frame(raster::extract(bgMask_Bm,  bgSample_Bm))
+##Add extracted values to background points table
+bgEnvsVals_Bm <- cbind(scientific_name = paste0("bg_", "Brachyramphus marmoratus"), bgSample_Bm,
+                            occID = NA, year = NA, institution_code = NA, country = NA,
+                            state_province = NA, locality = NA, elevation = NA,
+                            record_type = NA, bgEnvsVals_Bm)
+```
+
+### Partition occurrence data
+
+Partition occurrences and background points for model training and
+validation using “hierarchical checkerboard”, a spatial partition method
+with an aggregation factor of 2.
+
+```{r}
+# R code to get partitioned data
+groups_Bm <- part_partitionOccs(
+  occs = occs_Bm ,
+  bg =  bgSample_Bm, 
+  method = "cb2",
+  bgMask = bgMask_Bm,
+  aggFact = 2) 
+```
+
+### Build and Evaluate Niche Model
+
+Generating a species distribution model using the maxnet algorithm as
+implemented in ENMeval V2.0 (with clamping = TRUE). For tuning using L,
+LQ, H, LQH feature classes and regularization multipliers in the 1, 2
+range increasing by 1. Not using any categorical predictor variables.
+
+```{r}
+# Run maxent model for the selected species
+model_Bm <- model_maxent(
+  occs = occs_Bm,
+  bg = bgEnvsVals_Bm,
+  user.grp = groups_Bm, 
+  bgMsk = bgMask_Bm,
+  rms = c(1, 2), 
+  rmsStep =  1,
+  fcs = c('L', 'LQ', 'H', 'LQH'),
+  clampSel = TRUE,
+  algMaxent = "maxnet",
+  parallel = FALSE,
+  numCores = 19)
+```
+
+### Visualize
+
+Visualize response curves from “maxnet” model.
+
+```{r}
+# Retrieve env variables
+n <- mxNonzeroCoefs(model_Bm@models[["fc.L_rm.1"]], "maxnet")
+
+# Create response curves
+for (i in n) {
+maxnet::response.plot(
+  model_Bm@models[["fc.L_rm.1"]],
+  v = i,
+  type = "cloglog")
+}
+```
+
+Visualize map prediction from "maxnet" model. 
+
+```{r}
+# Create map prediction
+# Select current model and obtain raster prediction 
+m_Bm <- model_Bm@models[["fc.LQ_rm.1"]] 
+predSel_Bm <- predictMaxnet(m_Bm, bgMask_Bm, type = "cloglog", clamp = TRUE) 
+
+
+# Downsample the raster by aggregating cells (increase factor to reduce size more)
+predSel_Bm_resampled <- aggregate(predSel_Bm, fact = 10, fun = mean)
+# 'fact' determines the degree of downsampling
+ 
+
+# Export the resampled raster to a file 
+output_filepath <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/scm_mamu_suitability.tif" 
+# Specify your desired output file path 
+writeRaster(predSel_Bm_resampled, filename = output_filepath, 
+            format = "GTiff", overwrite = TRUE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
