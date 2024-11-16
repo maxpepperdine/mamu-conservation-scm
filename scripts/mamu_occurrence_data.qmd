@@ -2,6 +2,8 @@
 title: "MAMU Occurrence Data"
 format: html
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
 
 ## Load packages
@@ -42,22 +44,33 @@ write_csv(sp_occur_wallace,
           here("data/temp/occurrence_data/sp_occur_wallace.csv"))
 ```
 
+## Split the Wallace data in pre- and post-fire observations
+
+```{r}
+# load the cleaned data
+sp_occur_wallace <- read_csv("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/occurrence_data/gbif/all_occur_data/sp_occur_wallace.csv")
 
 
+# split the data into pre- and post-fire observations
 
+# pre (1990-2020)
+sp_occur_wallace_prefire <- sp_occur_wallace %>% 
+  filter(year >= 1990) %>% 
+  filter(year <= 2020)
+
+# post (2021-2024)
+sp_occur_wallace_postfire <- sp_occur_wallace %>% 
+  filter(year >= 2021) %>% 
+  filter(year <= 2024)
+
+# export the pre- and post-fire data as csv
+pre_fire_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/occurrence_data/gbif/pre_fire/sp_occur_wallace_prefire.csv"
+write_csv(sp_occur_wallace_prefire, pre_fire_path)
+
+post_fire_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/occurrence_data/gbif/post_fire/sp_occur_wallace_postfire.csv"
+write_csv(sp_occur_wallace_postfire, post_fire_path)
+```
 
 **GBIF Data Citation:**
 
 GBIF.org (19 September 2024) GBIF Occurrence Download <https://doi.org/10.15468/dl.hyyc6r>
-
-
-
-
-
-
-
-
-
-
-
-

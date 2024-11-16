@@ -14,7 +14,7 @@ editor_options:
 
 -   Canopy height
 
-- Post-fire canopy height 
+-   Post-fire canopy height
 
 -   Canopy cover
 
@@ -62,9 +62,6 @@ crs(santa_clara_chm_3ft)
 # san mateo (2.6 GB)
 san_mateo_chm_3ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/pacific_veg_map/san_mateo/san_mateo_CHM_res3ft_ft/SAN_MATEO_2017_CHM_3FT.tif")
 crs(san_mateo_chm_3ft)
-
-# CZU post-fire
-santa_cruz_postfire_chm_3ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/pacific_veg_map/cruz_clara/santa_cruz_postfire_CHM_res3ft_ft/CZU_POSTFIRE_CHM_3FEET.tif")
 ```
 
 #### Topographic
@@ -195,7 +192,8 @@ san_mateo_dem_5m <- disagg(san_mateo_dem_20m,
 # merge the DEMs to have one DEM for entire SCM region
 # order should be: (1) Santa Cruz; (2) Santa Clara; (3) San Mateo
 # in areas where the rasters overlap, values of the first raster will be used
-scm_dem_5m <- merge(santa_cruz_clara_dem_5m, san_mateo_dem_5m, 
+scm_dem_5m <- merge(santa_cruz_clara_dem_5m, 
+                    san_mateo_dem_5m, 
                     first = TRUE)
 ```
 
@@ -293,8 +291,10 @@ crs(clara_chm_45ft) == crs(mateo_chm_45ft)
 # merge the rasters to have one CHM for entire SCM region
 # order should be: (1) Santa Cruz; (2) Santa Clara; (3) San Mateo
 # in areas where the rasters overlap, values of the first raster will be used
-scm_chm_45ft <- merge(cruz_chm_45ft, clara_chm_45ft, mateo_chm_45ft, 
-                      first = TRUE)
+scm_chm_45ft <- terra::merge(cruz_chm_45ft, 
+                             clara_chm_45ft,
+                             mateo_chm_45ft, 
+                             first = TRUE)
 
 # plot with tmap to QC
 tm_shape(scm_chm_45ft) +
@@ -334,3 +334,49 @@ writeRaster(scm_chm_45ft, scm_chm_45ft_file_path,
 ```{r}
 # did this with the Mosaic to Raster tool in ArcGIS Pro because R kept crashing
 ```
+
+## Make the post-fire CHM raster covering the SCM region 
+
+```{r}
+# load the CZU post-fire CHM
+santa_cruz_postfire_chm_3ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/pacific_veg_map/cruz_clara/czu_postfire_CHM_res3ft_ft/CZU_POSTFIRE_CHM_3FEET.tif")
+plot(santa_cruz_postfire_chm_3ft)
+
+# load the pre-fire CHM
+santa_cruz_chm_45ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_chm_45ft.tif")
+crs(santa_cruz_chm_45ft)
+# check if the post-fire CHM is in the same CRS as the pre-fire CHM
+crs(santa_cruz_postfire_chm_3ft) == crs(santa_cruz_chm_45ft)
+
+
+# project the post-fire CHM to the same CRS as the pre-fire CHM
+santa_cruz_postfire_chm_3ft_proj <- project(santa_cruz_postfire_chm_3ft, 
+                                            crs(santa_cruz_chm_45ft))
+# confirm they're in the same CRS
+crs(santa_cruz_postfire_chm_3ft_proj) == crs(santa_cruz_chm_45ft)
+
+
+# resample the post-fire CHM to the same resolution as the pre-fire CHM
+santa_cruz_postfire_chm_45ft <- resample(santa_cruz_postfire_chm_3ft_proj, 
+                                         santa_cruz_chm_45ft, 
+                                         method = "bilinear")
+res(santa_cruz_postfire_chm_45ft) == res(santa_cruz_chm_45ft) # QC
+
+
+# merge the pre-fire and post-fire CHMs
+# preserve the post-fire CHM values where they exist
+scm_postfire_chm_45ft <- terra::merge(santa_cruz_postfire_chm_45ft, 
+                                      santa_cruz_chm_45ft, 
+                                      first = TRUE)
+plot(scm_postfire_chm_45ft)
+
+# save the merged CHM
+scm_postfire_chm_45ft_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_postfire_chm_45ft.tif"
+writeRaster(scm_postfire_chm_45ft, scm_postfire_chm_45ft_file_path, 
+            overwrite = TRUE)
+```
+
+
+
+
+

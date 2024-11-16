@@ -2,12 +2,14 @@
 title: "Prepping Env Variables for Wallace"
 format: html
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
 
 ## Overview
 
-- `Wallace` requires that all environmental predictor rasters are in the same projection, extent, and resolution; this document will ensure that.
-- Occurrence data uploaded to `Wallace` will be in WGS 84 by default, so all environmental predictor rasters need to be projected to WGS 84.
+-   `Wallace` requires that all environmental predictor rasters are in the same projection, extent, and resolution; this document will ensure that.
+-   Occurrence data uploaded to `Wallace` will be in WGS 84 by default, so all environmental predictor rasters need to be projected to WGS 84.
 
 ## Clear history
 
@@ -76,7 +78,7 @@ res(scm_chm_45ft) == res(dist_to_oceans)
 
 #### Resample the DEM and Aspect rasters to the extent of the CHM
 
-These two rasters didn't have the exact same extent at the CHM. This will cause issues when running Maxent in `Wallace`, so we need to resample them to the same extent. 
+These two rasters didn't have the exact same extent at the CHM. This will cause issues when running Maxent in `Wallace`, so we need to resample them to the same extent.
 
 ```{r}
 # the dem and aspect rasters are not the same extent as the chm
@@ -122,6 +124,7 @@ scm_dem_45ft_resample <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/da
 scm_aspect_45ft_resample <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_aspect_45ft_resample.tif")
 dist_to_rivers <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/distance_to_rivers_res45ft.tif")
 dist_to_oceans <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/distance_to_oceans_res45ft.tif")
+scm_postfire_chm_45ft <- rast("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_postfire_chm_45ft.tif")
 
 
 # change the CRS of all these rasters to WGS 84
@@ -135,6 +138,8 @@ dist_to_rivers_wgs84 <- project(dist_to_rivers,
                                crs(scm_chm_wgs84))
 dist_to_oceans_wgs84 <- project(dist_to_oceans, 
                                crs(scm_chm_wgs84))
+scm_postfire_chm_45ft_wgs84 <- project(scm_postfire_chm_45ft, 
+                                      crs(scm_chm_wgs84))
 ```
 
 #### Re-check the projection, resolution, and extent of the rasters
@@ -147,18 +152,21 @@ crs(scm_chm_45ft_wgs84) == crs(scm_dem_45ft_resample_wgs84)
 crs(scm_chm_45ft_wgs84) == crs(scm_aspect_45ft_resample_wgs84)
 crs(scm_chm_45ft_wgs84) == crs(dist_to_rivers_wgs84)
 crs(scm_chm_45ft_wgs84) == crs(dist_to_oceans_wgs84)
+crs(scm_chm_45ft_wgs84) == crs(scm_postfire_chm_45ft_wgs84)
 
 # extent
 ext(scm_chm_45ft_wgs84) == ext(scm_dem_45ft_resample_wgs84)
 ext(scm_chm_45ft_wgs84) == ext(scm_aspect_45ft_resample_wgs84)
 ext(scm_chm_45ft_wgs84) == ext(dist_to_rivers_wgs84)
 ext(scm_chm_45ft_wgs84) == ext(dist_to_oceans_wgs84)
+ext(scm_chm_45ft_wgs84) == ext(scm_postfire_chm_45ft_wgs84)
 
 # resolution
 res(scm_chm_45ft_wgs84) == res(scm_dem_45ft_resample_wgs84)
 res(scm_chm_45ft_wgs84) == res(scm_aspect_45ft_resample_wgs84)
 res(scm_chm_45ft_wgs84) == res(dist_to_rivers_wgs84)
 res(scm_chm_45ft_wgs84) == res(dist_to_oceans_wgs84)
+res(scm_chm_45ft_wgs84) == res(scm_postfire_chm_45ft_wgs84)
 ```
 
 #### Save the rasters
@@ -181,9 +189,7 @@ writeRaster(dist_to_rivers_wgs84,
 writeRaster(dist_to_oceans_wgs84,
             "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/distance_to_oceans_wgs84.tif",
             overwrite = TRUE)
+writeRaster(scm_postfire_chm_45ft_wgs84,
+            "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/scm_postfire_chm_wgs84.tif",
+            overwrite = TRUE)
 ```
-
-
-
-
-

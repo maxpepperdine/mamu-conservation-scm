@@ -1,5 +1,5 @@
 ---
-title: "Pre CZU Fire Maxent Modeling"
+title: "Post CZU Fire Maxent Modeling"
 author: "Maxwell Pepperdine"
 format: html
 editor: visual
@@ -33,8 +33,8 @@ library(wallace)
 
 ```{r}
 # NOTE: provide the folder path of the .csv file
-occs_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/occurrence_data/gbif/pre_fire/"
-occs_path <- file.path(occs_path, "sp_occur_wallace_prefire.csv")
+occs_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/occurrence_data/gbif/post_fire/"
+occs_path <- file.path(occs_path, "sp_occur_wallace_postfire.csv")
 # get a list of species occurrence data
 userOccs_Bm <- occs_userOccs(
   txtPath = occs_path, 
@@ -51,11 +51,11 @@ Using user-specified variables.
 ```{r}
 ## Specify the directory with the environmental variables
 dir_envs_Bm <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/WGS_84/"
-envs_path <- file.path(dir_envs_Bm, c('distance_to_oceans_wgs84.tif', 'distance_to_rivers_wgs84.tif', 'scm_aspect_wgs84.tif', 'scm_chm_wgs84.tif', 'scm_dem_wgs84.tif'))
+envs_path <- file.path(dir_envs_Bm, c('distance_to_oceans_wgs84.tif', 'distance_to_rivers_wgs84.tif', 'scm_aspect_wgs84.tif', 'scm_postfire_chm_wgs84.tif', 'scm_dem_wgs84.tif'))
 # Create environmental object 
 envs_Bm <- envs_userEnvs(
   rasPath = envs_path,
-  rasName = c('distance_to_oceans_wgs84.tif', 'distance_to_rivers_wgs84.tif', 'scm_aspect_wgs84.tif', 'scm_chm_wgs84.tif', 'scm_dem_wgs84.tif'),
+  rasName = c('distance_to_oceans_wgs84.tif', 'distance_to_rivers_wgs84.tif', 'scm_aspect_wgs84.tif', 'scm_postfire_chm_wgs84.tif', 'scm_dem_wgs84.tif'),
   doBrick = FALSE)
 occs_xy_Bm <- occs_Bm[c('longitude', 'latitude')]
 occs_vals_Bm <- as.data.frame(raster::extract(envs_Bm, occs_xy_Bm, cellnumbers = TRUE))
@@ -140,32 +140,21 @@ model_Bm <- model_maxent(
 
 # view the model results
 model_Bm@results
-# best model: fc.LQH_rm.1
+# best model: fc.LQ_rm.1
 ```
 
 ### Visualize
 
-Visualize response curves from “maxnet” model.
+Visualize response curves from the best “maxnet” model (`fc.LQ_rm.1`).
 
 ```{r}
-# Retrieve env variables
-n <- mxNonzeroCoefs(model_Bm@models[["fc.L_rm.1"]], "maxnet")
+# Retrieve env variables for the best model 
+n <- mxNonzeroCoefs(model_Bm@models[["fc.LQ_rm.1"]], "maxnet")
 
 # Create response curves
 for (i in n) {
 maxnet::response.plot(
-  model_Bm@models[["fc.L_rm.1"]],
-  v = i,
-  type = "cloglog")
-}
-
-# Retrieve env variables for the best model
-best <- mxNonzeroCoefs(model_Bm@models[["fc.LQH_rm.1"]], "maxnet")
-
-# Create response curves for the best model
-for (i in best) {
-maxnet::response.plot(
-  model_Bm@models[["fc.LQH_rm.1"]],
+  model_Bm@models[["fc.LQ_rm.1"]],
   v = i,
   type = "cloglog")
 }
@@ -176,7 +165,7 @@ Visualize map prediction from "maxnet" model.
 ```{r}
 # Create map prediction
 # Select best model and obtain raster prediction 
-m_Bm <- model_Bm@models[["fc.LQH_rm.1"]] 
+m_Bm <- model_Bm@models[["fc.LQ_rm.1"]] 
 predSel_Bm <- predictMaxnet(m_Bm, bgMask_Bm, type = "cloglog", clamp = TRUE) 
 
 
@@ -186,20 +175,11 @@ predSel_Bm_resampled <- aggregate(predSel_Bm, fact = 10, fun = mean)
  
 
 # Export the resampled raster to a file 
-output_filepath <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/wallace_outputs/pre-fire/2024_11_16_fc_LQH_rm1/map_predictions/sdm_prefire_fc_LQH_rm1.tif" 
+output_filepath <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/wallace_outputs/post-fire/2024_11_16_fc_LQ_rm1/map_prediction/sdm_postfire_fc_LQ_rm1.tif" 
 # Specify your desired output file path 
 writeRaster(predSel_Bm_resampled, filename = output_filepath, 
             format = "GTiff", overwrite = TRUE)
 ```
-
-
-
-
-
-
-
-
-
 
 
 

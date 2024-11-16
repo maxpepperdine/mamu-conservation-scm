@@ -12,13 +12,17 @@
 |    └── raw_data
 |         └── ...
 ├── scripts
-|    └── cdfw_occurrence_data.qmd               # Quarto doc used to upload and clean CDFW occurrence data  
-|    └── distance_to_nearest_river.qmd          # Quarto doc used to generate the distance to nearest river raster
-|    └── distance_to _ocean.qmd                 # Quarto doc used to generate the distance to ocean raster
-|    └── mamu_occurrence_data.qmd               # Quarto doc used to upload and clean GBIF occurrence data 
-|    └── running_wallace.qmd                    # Quarto doc used to run MaxEnt models with `Wallace` package
-|    └── maxent_wallace_variable_prep.qmd       # Quarto doc used to make preictor variables suitable for Wallace
-|    └── pacific_veg_map_processing.qmd         # Quarto doc used to process & resample all Pacific Veg Map data
+|    └── cdfw_occurrence_data.qmd               # upload and clean CDFW occurrence data  
+|    └── distance_to_nearest_river.qmd          # create the distance to nearest river raster
+|    └── distance_to_ocean.qmd                  # create the distance to ocean raster
+|    └── figure_making.qmd                      # make figures for the manuscript
+|    └── mamu_occurrence_data.qmd               # upload, clean, and filter GBIF occurrence data
+|    └── maxent_prefire_cdfw.qmd                # run MaxEnt models with pre-fire CDFW data
+|    └── maxent_prefire_gbif.qmd                # run MaxEnt models with pre-fire GBIF data
+|    └── maxent_postfire_gbif.qmd               # run MaxEnt models with post-fire GBIF data
+|    └── maxent_wallace_variable_prep.qmd       # make preictor variables suitable for Wallace
+|    └── pacific_veg_map_processing.qmd         # process & resample all Pacific Veg Map data
+|    └── running_wallace.qmd                    # activate the `Wallace` package for MaxEnt exploration
 ├── .gitignore                                  # used to avoid pushing all data to GitHub
 ├── README.md
 ├── mamu-conservation-scm.Rproj
