@@ -132,7 +132,7 @@ model_Bm <- model_maxent(
   numCores = 19)
 
 # view the model results
-# model_Bm@results
+ model_Bm@results
 # best model: fc.LQH_rm.1
 ```
 
@@ -167,11 +167,18 @@ predSel_Bm_resampled <- aggregate(predSel_Bm, fact = 10, fun = mean)
 # 'fact' determines the degree of downsampling
  
 
-# Export the resampled raster to a file 
-output_filepath <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/wallace_outputs/pre-fire/2024_11_16_fc_LQH_rm1/map_predictions/sdm_prefire_fc_LQH_rm1.tif" 
-# Specify your desired output file path 
-writeRaster(predSel_Bm_resampled, filename = output_filepath, 
+# Export the original raster to a file
+output_filepath <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/wallace_outputs/pre-fire/2024_11_18_fc_LQH_rm1/map_predictions/sdm_prefire_fc_LQH_rm1_res45ft.tif"
+# Specify your desired output file path
+writeRaster(predSel_Bm, filename = output_filepath, 
             format = "GTiff", overwrite = TRUE)
+
+
+# # Export the resampled raster to a file 
+# output_filepath_resample <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/wallace_outputs/pre-fire/2024_11_16_fc_LQH_rm1/map_predictions/sdm_prefire_fc_LQH_rm1_resample.tif" 
+# # Specify your desired output file path 
+# writeRaster(predSel_Bm_resampled, filename = output_filepath_resample, 
+#             format = "GTiff", overwrite = TRUE)
 ```
 
 ### Transfer model
