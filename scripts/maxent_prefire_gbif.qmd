@@ -15,8 +15,7 @@ rm(list=ls())
 
 ### Package installation
 
-Wallace uses the following R packages that must be installed and loaded
-before starting.
+Wallace uses the following R packages that must be installed and loaded before starting.
 
 ```{r}
 library(spocc)
@@ -72,8 +71,7 @@ occs_Bm <- cbind(occs_Bm, occs_vals_Bm)
 
 ### Process environmental data
 
-Sampling of 1000 background points and corresponding environmental data
-using a “bounding box” method with a 0.2 degree buffer.
+Sampling of 1000 background points and corresponding environmental data using a “bounding box” method with a 0.2 degree buffer.
 
 ```{r}
 # Generate background extent 
@@ -102,9 +100,7 @@ bgEnvsVals_Bm <- cbind(scientific_name = paste0("bg_", "Brachyramphus marmoratus
 
 ### Partition occurrence data
 
-Partition occurrences and background points for model training and
-validation using “hierarchical checkerboard”, a spatial partition method
-with an aggregation factor of 2.
+Partition occurrences and background points for model training and validation using “hierarchical checkerboard”, a spatial partition method with an aggregation factor of 2.
 
 ```{r}
 # R code to get partitioned data
@@ -118,10 +114,7 @@ groups_Bm <- part_partitionOccs(
 
 ### Build and Evaluate Niche Model
 
-Generating a species distribution model using the maxnet algorithm as
-implemented in ENMeval V2.0 (with clamping = TRUE). For tuning using L,
-LQ, H, LQH feature classes and regularization multipliers in the 1, 2
-range increasing by 1. Not using any categorical predictor variables.
+Generating a species distribution model using the maxnet algorithm as implemented in ENMeval V2.0 (with clamping = TRUE). For tuning using L, LQ, H, LQH feature classes and regularization multipliers in the 1, 2 range increasing by 1. Not using any categorical predictor variables.
 
 ```{r}
 # Run maxent model for the selected species
@@ -139,7 +132,7 @@ model_Bm <- model_maxent(
   numCores = 19)
 
 # view the model results
-model_Bm@results
+# model_Bm@results
 # best model: fc.LQH_rm.1
 ```
 
@@ -148,22 +141,11 @@ model_Bm@results
 Visualize response curves from “maxnet” model.
 
 ```{r}
-# Retrieve env variables
-n <- mxNonzeroCoefs(model_Bm@models[["fc.L_rm.1"]], "maxnet")
-
-# Create response curves
-for (i in n) {
-maxnet::response.plot(
-  model_Bm@models[["fc.L_rm.1"]],
-  v = i,
-  type = "cloglog")
-}
-
 # Retrieve env variables for the best model
-best <- mxNonzeroCoefs(model_Bm@models[["fc.LQH_rm.1"]], "maxnet")
+n <- mxNonzeroCoefs(model_Bm@models[["fc.LQH_rm.1"]], "maxnet")
 
 # Create response curves for the best model
-for (i in best) {
+for (i in n) {
 maxnet::response.plot(
   model_Bm@models[["fc.LQH_rm.1"]],
   v = i,
@@ -171,7 +153,7 @@ maxnet::response.plot(
 }
 ```
 
-Visualize map prediction from "maxnet" model. 
+Visualize map prediction from "maxnet" model.
 
 ```{r}
 # Create map prediction
@@ -192,17 +174,46 @@ writeRaster(predSel_Bm_resampled, filename = output_filepath,
             format = "GTiff", overwrite = TRUE)
 ```
 
+### Transfer model
+
+Transferring the model to the same modelling area with no threshold
+rule. Environmental layers for transferring are user provided. These are the same variables, except for the CHM which represents the post-fire conditions.
+
+```{r}
+## Specify the directory with the environmental variables
+dir_envsXf_Bm <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/post_fire_transfer/"
+envsXf_path <- file.path(dir_envsXf_Bm, c('distance_to_oceans_wgs84.tif', 'distance_to_rivers_wgs84.tif', 'scm_aspect_wgs84.tif', 'scm_chm_wgs84.tif', 'scm_dem_wgs84.tif'))
+# Load user environmental variables
+xferUserEnvs_Bm <- envs_userEnvs(
+  rasPath = envsXf_path,
+  rasName = c('distance_to_oceans_wgs84.tif', 'distance_to_rivers_wgs84.tif', 'scm_aspect_wgs84.tif', 'scm_chm_wgs84.tif', 'scm_dem_wgs84.tif')
+)
+# Transfer model 
+xfer_userEnvs_Bm <- xfer_userEnvs(
+  evalOut = model_Bm,
+  curModel= "fc.LQH_rm.1",
+  envs = xferUserEnvs_Bm,
+  xfExt = bgExt_Bm,
+  alg = "maxnet",
+  outputType = "cloglog",
+  clamp = TRUE
+ )
+# store the cropped variables of transfer
+xferExt_Bm <- xfer_userEnvs_Bm$xferExt
 
 
+###Make map of transfer
+mapXferVals_Bm <- getRasterVals(xfer_userEnvs_Bm$xferUser, "cloglog")
 
+##Save the `mapXferVals_Bm` object as a raster file.
+# extract the raster file from the transfered model
+xfer_rast <- xfer_userEnvs_Bm$xferUser[[1]]
 
-
-
-
-
-
-
-
+# Save the raster file
+output_filepath <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/wallace_outputs/post-fire/2024_11_17_fc_LQH_rm1_transfer/map_predictions/sdm_postfire_fc_LQH_rm1_transfer.tif"
+writeRaster(xfer_rast, filename = output_filepath, 
+            format = "GTiff", overwrite = TRUE)
+```
 
 
 
