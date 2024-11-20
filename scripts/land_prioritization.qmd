@@ -1,0 +1,182 @@
+---
+title: "Land Prioritization"
+author: "Maxwell Pepperdine"
+format: html
+editor: visual
+---
+
+## Clear environment
+
+```{r}
+rm(list=ls())
+```
+
+## Load packages
+
+```{r}
+library(terra)
+library(sf)
+library(tidyverse)
+library(tmap)
+```
+
+## Load data
+
+```{r}
+# Load Santa Cruz county parcels
+sc_parcels <- st_read("~/Bren Courses/ESM 270p/data/raw_data/boundaries/sc_county_parcels/Assessor_Parcels.shp")
+
+# Load San Mateo county parcels
+sm_parcels1 <- st_read("~/Bren Courses/ESM 270p/data/raw_data/boundaries/sm_county_parcels/ACTIVE_PARCELS/SAN_MATEO_COUNTY_ACTIVE_PARCELS_APN.shp")
+sm_parcels2 <- st_read("~/Bren Courses/ESM 270p/data/raw_data/boundaries/sm_county_parcels/ACTIVE_PARCELS/SAN_MATEO_COUNTY_ACTIVE_PARCELS_APN2.shp")
+
+# Load Santa Clara County parcels
+sccl_parcels <- st_read("~/Bren Courses/ESM 270p/data/raw_data/boundaries/sccl_county_parcels/Parcels/geo_export_fb15c047-6a84-4c36-91f2-8ea3aff8d09f.shp")
+
+# Load the SCM region boundary
+scm_boundary <- st_read("~/Bren Courses/ESM 270p/data/raw_data/boundaries/scm_region/scm_region_boundary.shp")
+```
+
+## County parcel wrangling
+
+#### Check the CRS of the county parcels
+
+```{r}
+crs(sc_parcels)
+crs(sm_parcels1)
+crs(sm_parcels2)
+crs(sccl_parcels)
+crs(scm_boundary)
+
+# project the sccl_parcels to the same CRS as sc
+sccl_parcels <- st_transform(sccl_parcels, 
+                             crs(sc_parcels))
+
+# project the scm_boundary to the same CRS as sc
+scm_boundary <- st_transform(scm_boundary, 
+                             crs(sc_parcels))
+
+if(crs(sc_parcels) == crs(sm_parcels1) & 
+   crs(sm_parcels1) == crs(sm_parcels2) & 
+   crs(sm_parcels2) == crs(sccl_parcels) & 
+   crs(scm_boundary) == crs(sc_parcels)){
+  print("Success: All county parcels have the same CRS")
+} else {
+  warning("Error: Not all county parcels have the same CRS")
+}
+```
+
+#### Combine San Mateo parcels
+
+```{r}
+# combine the two separate SM county parcels
+sm_parcels <- rbind(sm_parcels1, sm_parcels2)
+
+# make sure this worked
+if(nrow(sm_parcels) == nrow(sm_parcels1) + nrow(sm_parcels2)){
+  print("Success: San Mateo parcels combined")
+} else {
+  warning("Error: San Mateo parcels not combined")
+}
+```
+
+#### Combine all county parcels
+
+```{r}
+# make sure the sc and sccl parcels have same columns as sm
+sc_parcels <- sc_parcels %>% 
+  select(APNNODASH) %>% 
+  # add a column called "OBJECTID" that starts and 1000000 and increments by 1
+  mutate(OBJECTID = 1000000 + row_number()) %>% 
+  # move the column before geometry 
+  relocate(OBJECTID, .before = geometry) %>% 
+  # rename to match sm parcels
+  rename(APN = APNNODASH)
+
+sccl_parcels <- sccl_parcels %>% 
+  select(apn, objectid) %>% 
+  rename(APN = apn) %>% 
+  rename(OBJECTID = objectid)
+
+# combine all parcels
+all_parcels <- rbind(sc_parcels, sm_parcels, sccl_parcels)
+```
+
+```{r}
+# make sure this worked
+if(nrow(all_parcels) == 
+   nrow(sc_parcels) + nrow(sm_parcels) + nrow(sccl_parcels)){
+  print("Success: All county parcels combined!")
+} else {
+  warning("Error: All county parcels not combined")
+}
+```
+
+#### Crop to the SCM region boundary
+
+```{r}
+# crop to the scm boundary
+scm_parcels <- st_intersection(all_parcels, 
+                               scm_boundary)
+```
+
+```{r}
+# make sure this worked
+# write a QC using st_touches()
+if(all(st_touches(scm_parcels, scm_boundary))){
+  print("Success: Parcels cropped to SCM boundary")
+} else {
+  warning("Error: Parcels not cropped to SCM boundary")
+}
+```
+
+```{r}
+# save the scm parcels
+scm_parcels_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/boundaries/scm_region_parcels/scm_region_parcels.shp"
+st_write(scm_parcels, 
+         scm_parcels_path)
+```
+
+## Land prioritization
+
+#### Load data
+
+```{r}
+# Load the pre-fire sdm
+pre_fire_sdm <- rast("~/Bren Courses/ESM 270p/outputs/wallace_outputs/pre-fire/2024_11_18_fc_LQH_rm1/map_predictions/sdm_prefire_fc_LQH_rm1_res45ft.tif")
+
+# Load the post-fire transferred sdm
+post_fire_sdm <- rast("~/Bren Courses/ESM 270p/outputs/wallace_outputs/post-fire/2024_11_17_fc_LQH_rm1_transfer/map_predictions/sdm_postfire_fc_LQH_rm1_transfer.tif")
+
+# Load scm county parcels
+```
+
+#### Reclassify the SDMs to create habitat suitability maps
+
+```{r}
+# reclassify the pre-fire sdm
+pre_fire_sdm_reclass <- classify(pre_fire_sdm, 
+                                 rcl = )
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
