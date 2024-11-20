@@ -149,6 +149,7 @@ pre_fire_sdm <- rast("~/Bren Courses/ESM 270p/outputs/wallace_outputs/pre-fire/2
 post_fire_sdm <- rast("~/Bren Courses/ESM 270p/outputs/wallace_outputs/post-fire/2024_11_17_fc_LQH_rm1_transfer/map_predictions/sdm_postfire_fc_LQH_rm1_transfer.tif")
 
 # Load scm county parcels
+scm_parcels <- st_read("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/boundaries/scm_region_parcels/scm_region_parcels.shp")
 ```
 
 #### Reclassify the SDMs to create habitat suitability maps
