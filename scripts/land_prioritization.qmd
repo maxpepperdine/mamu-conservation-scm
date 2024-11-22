@@ -3,6 +3,8 @@ title: "Land Prioritization"
 author: "Maxwell Pepperdine"
 format: html
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
 
 ## Clear environment
@@ -148,19 +150,106 @@ pre_fire_sdm <- rast("~/Bren Courses/ESM 270p/outputs/wallace_outputs/pre-fire/2
 # Load the post-fire transferred sdm
 post_fire_sdm <- rast("~/Bren Courses/ESM 270p/outputs/wallace_outputs/post-fire/2024_11_17_fc_LQH_rm1_transfer/map_predictions/sdm_postfire_fc_LQH_rm1_transfer.tif")
 
-# Load scm county parcels
+# Load scm county parcels as an sf object
 scm_parcels <- st_read("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/boundaries/scm_region_parcels/scm_region_parcels.shp")
 ```
 
 #### Reclassify the SDMs to create habitat suitability maps
 
 ```{r}
+# make a matrix that identifies the reclassification values
+# probability of occurrence >= 0.7 = 1 (suitable habitat)
+# probability of occurrence < 0.7 = 0 (unsuitable habitat)
+
+# define the reclassification matrix
+rcl <- matrix(c(0, 0.7, 0, # group 0 ranges from 0 to 0.7
+                0.7, 1, 1), # group 1 ranges from 0.7 to 1
+              ncol = 3, 
+              byrow = TRUE)
+
+
 # reclassify the pre-fire sdm
-pre_fire_sdm_reclass <- classify(pre_fire_sdm, 
-                                 rcl = )
+pre_fire_reclass <- classify(pre_fire_sdm, 
+                                 rcl = rcl)
+plot(pre_fire_reclass)
+
+
+# reclassify the post-fire sdm
+post_fire_reclass <- classify(post_fire_sdm, 
+                                 rcl = rcl)
+plot(post_fire_reclass)
+
+
+# turn the post-fire sdm into a polygon
+post_fire_reclass_polygon <- as.polygons(post_fire_reclass)
+
+
+# save the reclassified SDMs
+pre_fire_reclass_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/data/habitat_suitability/pre_fire/pre_fire_habitat_suitability.tif"
+writeRaster(pre_fire_reclass, 
+            pre_fire_reclass_path, overwrite = TRUE)
+
+post_fire_reclass_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/data/habitat_suitability/post_fire/post_fire_habitat_suitability.tif"
+writeRaster(post_fire_reclass, 
+            post_fire_reclass_path, overwrite = TRUE)
+post_fire_reclass_polygon_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/data/habitat_suitability/post_fire/post_fire_habitat_suitability.shp"
+writeVector(post_fire_reclass_polygon, 
+            post_fire_reclass_polygon_path, overwrite = TRUE)
 ```
 
+#### Calculate the change in habitat suitability
 
+If we subtract the pre-fire habitat suitability from the post-fire habitat suitability, we can calculate the change in habitat suitability. This will give us an idea of how the habitat suitability has changed due to the fire. Positive values represent an increase in habitat suitability, while negative values represent a decrease in habitat suitability.
+
+```{r}
+# calculate the change in habitat suitability
+diff_hab_suit <- post_fire_reclass - pre_fire_reclass
+plot(diff_hab_suit)
+
+# convert to a vector 
+diff_hab_suit_polygon <- as.polygons(diff_hab_suit)
+
+## save the change in habitat suitability
+# as a raster
+diff_hab_suit_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/data/habitat_suitability/difference/post-pre_hab_suit_diff.tif"
+writeRaster(diff_hab_suit, 
+            diff_hab_suit_path, overwrite = TRUE)
+
+# as a shapefile
+diff_hab_suit_polygon_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/data/habitat_suitability/difference/post-pre_hab_suit_diff.shp"
+writeVector(diff_hab_suit_polygon, 
+            diff_hab_suit_polygon_path, overwrite = TRUE)
+```
+
+#### Calculate suitable habitat area in each county parcel post-fire
+
+Load the canopy height model to project the post-fire raster and county parcels to the same CRS.
+
+```{r}
+chm_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_chm_45ft.tif"
+scm_chm_45ft <- rast(chm_file_path)
+crs(scm_chm_45ft)
+```
+
+Project the SCM parcels & post-fire habitat suitability raster to the same CRS as the canopy height model.
+
+```{r}
+# project the post-fire raster & county parcels to NAD 83 CA Zone III
+post_fire_reclass <- project(post_fire_reclass, 
+                             crs(scm_chm_45ft))
+scm_parcels <- st_transform(scm_parcels, 
+                            crs(scm_chm_45ft))
+# QC make sure this worked
+crs(post_fire_reclass) == crs(scm_chm_45ft) & 
+  crs(scm_parcels) == crs(scm_chm_45ft)
+
+scm_parcels_sv <- vect(scm_parcels)
+
+# calculate the area of suitable habitat from the post-fire model in each parcel
+suitable_habitat_area <- zonal(post_fire_reclass, 
+                               scm_parcels_sv, 
+                               fun = "sum")
+```
 
 
 
