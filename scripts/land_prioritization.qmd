@@ -249,6 +249,8 @@ scm_parcels_sv <- vect(scm_parcels)
 suitable_habitat_area <- zonal(post_fire_reclass, 
                                scm_parcels_sv, 
                                fun = "sum")
+
+# do a zonal as table and then merge back to the county parcels
 ```
 
 
