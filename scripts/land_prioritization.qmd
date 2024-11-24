@@ -226,9 +226,19 @@ writeVector(diff_hab_suit_polygon,
 Load the canopy height model to project the post-fire raster and county parcels to the same CRS.
 
 ```{r}
+# CHM
 chm_file_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/new_data/wallace_env_data/scm_chm_45ft.tif"
 scm_chm_45ft <- rast(chm_file_path)
 crs(scm_chm_45ft)
+
+# post-fire reclassified raster
+post_fire_reclass_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/data/habitat_suitability/post_fire/post_fire_habitat_suitability.tif"
+post_fire_reclass <- rast(post_fire_reclass_path)
+
+
+# SCM county parcels
+scm_parcels_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/data/raw_data/boundaries/scm_region_parcels/scm_region_parcels.shp"
+scm_parcels <- st_read(scm_parcels_path)
 ```
 
 Project the SCM parcels & post-fire habitat suitability raster to the same CRS as the canopy height model.
@@ -239,20 +249,47 @@ post_fire_reclass <- project(post_fire_reclass,
                              crs(scm_chm_45ft))
 scm_parcels <- st_transform(scm_parcels, 
                             crs(scm_chm_45ft))
-# QC make sure this worked
-crs(post_fire_reclass) == crs(scm_chm_45ft) & 
-  crs(scm_parcels) == crs(scm_chm_45ft)
-
 scm_parcels_sv <- vect(scm_parcels)
 
-# calculate the area of suitable habitat from the post-fire model in each parcel
-suitable_habitat_area <- zonal(post_fire_reclass, 
-                               scm_parcels_sv, 
-                               fun = "sum")
+# QC make sure this worked
+crs(post_fire_reclass) == crs(scm_chm_45ft) & 
+  crs(scm_parcels_sv) == crs(scm_chm_45ft)
 
-# do a zonal as table and then merge back to the county parcels
+
+# # calculate the area of suitable habitat from the post-fire model in each parcel
+# suitable_habitat_area <- zonal(post_fire_reclass, 
+#                                scm_parcels_sv, 
+#                                fun = "sum")
+
+# extract habitat suitability values for each parcel
+suitability_values <- terra::extract(post_fire_reclass, 
+                                     scm_parcels_sv, 
+                                     exact = TRUE, 
+                                     weights = TRUE)
+
+# Compute the area of suitable habitat (value = 1) for each parcel
+scm_parcels_sv$area_suitable <- sapply(1:nrow(scm_parcels_sv), function(i) {
+  # Filter extracted values for the current parcel
+  parcel_values <- suitability_values[suitability_values$ID == i, ]
+  
+  # Calculate area for cells with value = 1, weighted by overlap
+  sum(parcel_values$value == 1, na.rm = TRUE) * 
+    parcel_values$weight * 
+    res(post_fire_reclass)[1] * res(post_fire_reclass)[2]
+})
+
+
+# Sort parcels by area_suitable in descending order
+top_10_parcels <- scm_parcels_sv[order(-scm_parcels_sv$area_suitable), ][1:10, ]
+
+# Inspect the results
+top_10_parcels
+
+# save the suitable habitat area
+suitable_habitat_area_path <- "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/data/habitat_suitability/post_fire/suitable_habitat_area_parcels.shp"
+writeVector(scm_parcels_sv, 
+            suitable_habitat_area_path)
 ```
-
 
 
 

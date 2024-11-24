@@ -1,0 +1,155 @@
+---
+title: "ArcGIS Pro Land Prioritization"
+author: "Maxwell Pepperdine"
+format: html
+editor: visual
+---
+
+## Overview
+
+This document outlines the process of using ArcGIS Pro to prioritize land parcels for conservation, and then visualized the results. All county parcels (protected & unprotected) in the SCM region AND only unprotected parcels in the SCM region with the greatest area of suitable habitat were identified by the following steps:
+
+- Make sure the data is in the correct projection (NAD 83 CA Zone III)
+- Intersect the post-fire suitable habitat with the SCM region parcels 
+- Dissolve by APN to get total area of suitable habitat per parcel
+- Use the calcuate geometry tool to get the area of suitable habitat (in hectares and square meters) within each parcel
+
+## Clear environment
+
+```{r}
+rm(list=ls())
+```
+
+## Load packages
+
+```{r}
+library(terra)
+library(sf)
+library(tidyverse)
+library(patchwork)
+```
+
+
+## Load Data
+
+```{r}
+# all SCM parcels with the area of suitable habitat
+all_scm_parcels_suit_hab <- st_read("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/data/habitat_suitability/parcel_analysis/all_parcel_postfire_suit_hab_area.shp")
+
+# unprotected SCM parcels with the area of suitable habitat
+unprotected_scm_parcels_suit_hab <- st_read("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/data/habitat_suitability/parcel_analysis/unprotected_parcel_postfire_suit_hab_area.shp")
+```
+
+## Clean the data
+
+```{r}
+# all SCM parcels
+all_scm_parcels_suit_hab <- all_scm_parcels_suit_hab %>% 
+  select(APN, 
+         suit_area_m2 = suitable_a, 
+         suit_area_ha = suit_area_)
+
+# unprotected SCM parcels
+unprotected_scm_parcels_suit_hab <- unprotected_scm_parcels_suit_hab %>% 
+  select(APN, 
+         suit_area_m2 = suit_hab_m, 
+         suit_area_ha = suit_hab_h)
+```
+
+## Select the top 10 parcels with the greatest area of suitable habitat
+
+```{r}
+# all SCM parcels
+top_10_all_scm_parcels <- all_scm_parcels_suit_hab %>% 
+  arrange(desc(suit_area_ha)) %>% 
+  head(10)
+
+# unprotected SCM parcels
+top_10_unprotected_scm_parcels <- unprotected_scm_parcels_suit_hab %>% 
+  arrange(desc(suit_area_ha)) %>% 
+  head(10)
+```
+
+## Make some plots
+
+```{r}
+# all SCM parcels
+all_scm_plot <- ggplot(top_10_all_scm_parcels, 
+                       aes(x = reorder(APN, suit_area_ha), 
+                           y = suit_area_ha, 
+                           fill = suit_area_ha)) +
+  geom_col(color = "black", 
+           linewidth = 0.2) +
+  scale_fill_gradient(low = "grey80", 
+                      high = "lightgreen") +
+  labs(title = " ",
+       x = "APN",
+       y = "Area of suitable habitat (ha)", 
+       fill = "APN") + 
+  theme_classic() + 
+  geom_text(aes(label = round(suit_area_ha, 0)), 
+            vjust = -0.5, 
+            size = 3) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "none")
+#all_scm_plot
+
+# unprotected SCM parcels
+unprotected_scm_plot <- ggplot(top_10_unprotected_scm_parcels, 
+                               aes(x = reorder(APN, suit_area_ha), 
+                                   y = suit_area_ha, 
+                                   fill = suit_area_ha)) +
+  geom_col(color = "black", 
+           linewidth = 0.2) +
+  scale_fill_gradient(low = "grey80", 
+                      high = "lightgreen") +
+  labs(title = " ",
+       x = "APN",
+       y = " ", 
+       fill = " ") + 
+  theme_classic() + 
+  geom_text(aes(label = round(suit_area_ha, 0)), 
+            vjust = -0.5, 
+            size = 3) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "none")
+#unprotected_scm_plot
+
+combined_plot <- all_scm_plot / unprotected_scm_plot 
+combined_plot <- combined_plot + plot_annotation(tag_levels = "A")
+#combined_plot
+
+combined_plot1 <- all_scm_plot + unprotected_scm_plot
+combined_plot1 <- combined_plot1 + plot_annotation(tag_levels = "A")
+combined_plot1
+
+# save the plots
+# ggsave("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/layouts/parcel_prioritization.png", 
+#        plot = combined_plot, 
+#        width = 10, 
+#        height = 10, 
+#        units = "in")
+
+ggsave("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/layouts/parcel_prioritization1.png", 
+       plot = combined_plot1, 
+       width = 10, 
+       height = 6, 
+       units = "in")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
