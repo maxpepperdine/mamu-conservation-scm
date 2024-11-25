@@ -16,6 +16,8 @@
 |    └── distance_to_nearest_river.qmd          # create the distance to nearest river raster
 |    └── distance_to_ocean.qmd                  # create the distance to ocean raster
 |    └── figure_making.qmd                      # make figures for the manuscript
+|    └── land_prioritization_arcgis.qmd         # visualize results from prioritization in ArcGIS Pro
+|    └── land_prioritization.qmd                # prioritize county parcels for murrelet conservation
 |    └── mamu_occurrence_data.qmd               # upload, clean, and filter GBIF occurrence data
 |    └── maxent_prefire_cdfw.qmd                # run MaxEnt models with pre-fire CDFW data
 |    └── maxent_prefire_gbif.qmd                # run MaxEnt models with pre-fire GBIF data

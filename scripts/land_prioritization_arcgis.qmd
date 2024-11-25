@@ -63,11 +63,18 @@ unprotected_scm_parcels_suit_hab <- unprotected_scm_parcels_suit_hab %>%
 top_10_all_scm_parcels <- all_scm_parcels_suit_hab %>% 
   arrange(desc(suit_area_ha)) %>% 
   head(10)
+# # save the top 10 parcels
+# st_write(top_10_all_scm_parcels, 
+#          "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/data/habitat_suitability/parcel_analysis/top_10_all_scm_parcels.shp")
+
 
 # unprotected SCM parcels
 top_10_unprotected_scm_parcels <- unprotected_scm_parcels_suit_hab %>% 
   arrange(desc(suit_area_ha)) %>% 
   head(10)
+# save the top 10 parcels
+# st_write(top_10_unprotected_scm_parcels, 
+#          "C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/data/habitat_suitability/parcel_analysis/top_10_unprotected_scm_parcels.shp")
 ```
 
 ## Make some plots
@@ -130,13 +137,68 @@ combined_plot1
 #        height = 10, 
 #        units = "in")
 
-ggsave("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/layouts/parcel_prioritization1.png", 
-       plot = combined_plot1, 
-       width = 10, 
-       height = 6, 
-       units = "in")
+# ggsave("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/layouts/parcel_prioritization1.png", 
+#        plot = combined_plot1, 
+#        width = 10, 
+#        height = 6, 
+#        units = "in")
 ```
 
+```{r}
+# all SCM parcels
+all_scm_plot <- ggplot(top_10_all_scm_parcels, 
+                       aes(x = reorder(APN, suit_area_ha), 
+                           y = suit_area_ha, 
+                           fill = suit_area_ha)) +
+  geom_col(color = "black", 
+           linewidth = 0.2) +
+  scale_fill_gradient(low = "grey80", 
+                      high = "lightgreen") +
+  labs(title = " ",
+       x = "APN",
+       y = "Area of suitable habitat (ha)", 
+       fill = "APN") + 
+  theme_classic() + 
+  geom_text(aes(label = round(suit_area_ha, 0)), 
+            vjust = -0.5, 
+            size = 3) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "none")
+#all_scm_plot
+
+# unprotected SCM parcels
+unprotected_scm_plot <- ggplot(top_10_unprotected_scm_parcels, 
+                               aes(x = reorder(APN, suit_area_ha), 
+                                   y = suit_area_ha, 
+                                   fill = suit_area_ha)) +
+  geom_col(color = "black", 
+           linewidth = 0.2) +
+  scale_fill_gradient(low = "grey80", 
+                      high = "dodgerblue3") +
+  labs(title = " ",
+       x = "APN",
+       y = " ", 
+       fill = " ") + 
+  theme_classic() + 
+  geom_text(aes(label = round(suit_area_ha, 0)), 
+            vjust = -0.5, 
+            size = 3) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "none")
+#unprotected_scm_plot
+
+
+combined_plot2 <- all_scm_plot + unprotected_scm_plot
+combined_plot2 <- combined_plot2 + plot_annotation(tag_levels = "A")
+combined_plot2
+
+
+ggsave("C:/Users/maxpe/Documents/Bren Courses/ESM 270p/outputs/layouts/parcel_prioritization2.png",
+       plot = combined_plot2,
+       width = 10,
+       height = 6,
+       units = "in")
+```
 
 
 
