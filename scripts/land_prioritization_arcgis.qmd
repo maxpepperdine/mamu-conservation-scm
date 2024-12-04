@@ -3,6 +3,8 @@ title: "ArcGIS Pro Land Prioritization"
 author: "Maxwell Pepperdine"
 format: html
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
 
 ## Overview

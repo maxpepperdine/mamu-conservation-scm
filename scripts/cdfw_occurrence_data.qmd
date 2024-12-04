@@ -36,19 +36,11 @@ occupied_sites <- st_transform(occupied_sites,
                                crs(nest_sites))
 ```
 
+## Data wrangling & cleaning 
 
+```{r}
 
-
-
-
-
-
-
-
-
-
-
-
+```
 
 
 
