@@ -32,9 +32,7 @@ This analysis was completed as part of a quarter-long project to develop a conse
 
 ## Data access
 
-The data used in this analysis was too large to upload to GitHub. 
-
-Tabular organization of metadata for the environmental predictor variables with links to accessing the data can be found [here](https://docs.google.com/spreadsheets/d/1AY5dmmMqd9WtNLHPuMkyDuuBdDyJMXatRGR2f7uCAwE/edit?usp=sharing). Occurrence data for the marbled murrelet was obtained from the [Global Biodiversity Information Facility (GBIF)](https://www.gbif.org/). 
+The data used in this analysis was too large to upload to GitHub. Tabular organization of metadata for the environmental predictor variables with links to accessing the data can be found [here](https://docs.google.com/spreadsheets/d/1AY5dmmMqd9WtNLHPuMkyDuuBdDyJMXatRGR2f7uCAwE/edit?usp=sharing). Occurrence data for the marbled murrelet was obtained from the [Global Biodiversity Information Facility (GBIF)](https://www.gbif.org/). 
 
 ## Acknowledgements 
 
