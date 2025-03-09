@@ -7,11 +7,6 @@ This analysis was completed as part of a quarter-long project to develop a conse
 ## Repository organization
 
 ```
-├── data
-|    └── new_data
-|         └── ...
-|    └── raw_data
-|         └── ...
 ├── scripts
 |    └── distance_to_nearest_river.qmd          # create the distance to nearest river raster
 |    └── distance_to_ocean.qmd                  # create the distance to ocean raster
